@@ -19,7 +19,7 @@ pip install casadi
 ## Install Unitree SDK2 Python (Host only)
 
 ```bash
-git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
+git clone git@github.com:physical-superintelligence-lab/unitree_sdk2_python.git
 cd unitree_sdk2_python
 pip install -e .
 ```
