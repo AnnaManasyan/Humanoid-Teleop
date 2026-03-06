@@ -1,14 +1,10 @@
 import logging
 import os
-import re
-import shutil
 import sys
-from multiprocessing import Event, Lock, Manager, Process, Queue, shared_memory
-from pathlib import Path
+from multiprocessing import Manager, Process, shared_memory
 
 import numpy as np
-
-from constants import *
+from constants import G1_sizes, H1_sizes
 from master import RobotTaskmaster
 from progress import ProgressTracker
 from utils.logger import logger
@@ -23,9 +19,21 @@ sys.path.append(parent_dir)
 
 
 class TeleopManager:
-    def __init__(self, task_name="default_task", robot="h1", debug=False):
+    def __init__(
+        self,
+        task_name="default_task",
+        robot="h1",
+        debug=False,
+        xr_device="avp",
+        input_mode="hand",
+        display_mode="immersive",
+    ):
         self.task_name = task_name
+        self.xr_device = xr_device
+        self.input_mode = input_mode
+        self.display_mode = display_mode
         logger.info(f"#### (Task: {self.task_name}):")
+        logger.info(f"#### XR Device: {xr_device}, Input: {input_mode}, Display: {display_mode}")
         if debug:
             logger.setLevel(logging.DEBUG)
         else:
@@ -96,7 +104,13 @@ class TeleopManager:
 
         def run_dataworker():
             taskworker = RobotDataWorker(
-                self.shared_dict, self.robot_shm_array, self.teleop_shm_array, robot
+                self.shared_dict,
+                self.robot_shm_array,
+                self.teleop_shm_array,
+                robot,
+                xr_device=self.xr_device,
+                input_mode=self.input_mode,
+                display_mode=self.display_mode,
             )
             taskworker.start()
 

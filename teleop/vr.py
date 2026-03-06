@@ -1,36 +1,32 @@
 import os
 import sys
-import time
-from multiprocessing import Event, Lock, Manager, Process, Queue, shared_memory
+import threading
+from multiprocessing import Event, Queue, shared_memory
 from pathlib import Path
 
 import numpy as np
 import yaml
+import zmq
 from robot_control.dex_retargeting.retargeting_config import RetargetingConfig
-
-from constants_vuer import tip_indices
-from teleop.robot_control.hand_retargeting import HandRetargeting, HandType
 from TeleVision import OpenTeleVision
 
-import threading
-import zmq
+from teleop.robot_control.hand_retargeting import HandRetargeting, HandType
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from constants_vuer import (
+from constants_vuer import (  # noqa: E402
+    M_to_unitree_hand,
     T_robot_openxr,
     T_to_unitree_hand,
-    M_to_unitree_hand,
     grd_yup2grd_zup,
-    hand2inspire,
     hand2inspire_l_arm,
     hand2inspire_l_finger,
     hand2inspire_r_arm,
     hand2inspire_r_finger,
 )
-from motion_utils import fast_mat_inv, mat_update
+from motion_utils import fast_mat_inv, mat_update  # noqa: E402
 
 FREQ = 30
 DELAY = 1 / FREQ
@@ -113,7 +109,7 @@ class ManusSkeletonReceiver:
 
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
-    
+
 
     def _detect_activity(self):
         # debug 左手
@@ -179,7 +175,7 @@ class ManusSkeletonReceiver:
                         self._left_xyz = right_xyz
                     elif right_sn == self.right_glove_sn:
                         self._right_xyz = right_xyz
-                
+
                 # self._detect_activity()
 
 
@@ -275,27 +271,27 @@ class VuerPreprocessor:
             # if not hasattr(self, 'openxr_save_counter'):
             #     self.openxr_save_counter = 0
             #     self.openxr_save_interval = 150
-                
+
             # self.openxr_save_counter += 1
             # if self.openxr_save_counter >= self.openxr_save_interval:
             #     self.openxr_save_counter = 0
-                
+
             #     # 1. 创建索引列 (0 到 24)
             #     # 索引的 dtype 应该与坐标点数据类型一致，这里假设是 float
             #     indices = np.arange(unitree_left_hand.shape[0], dtype=unitree_left_hand.dtype).reshape(-1, 1)
-                
+
             #     # 2. 拼接索引和 XYZ 坐标
             #     # 结果 shape 将是 (25, 4)，结构为 [index, x, y, z]
             #     data_to_save = np.hstack((indices, unitree_left_hand))
-                
+
             #     timestamp = time.strftime("%Y%m%d_%H%M%S")
             #     filename = f"openxr_target_points_with_idx_{timestamp}.npy"
-                
+
             #     np.save(filename, data_to_save.copy())
             #     print(f"OpenXR Target Data Saved: {filename} (Shape: {data_to_save.shape})")
 
 
-            
+
 
             # your discovered tip indices
             tip_idx = [24, 5, 10]   # thumb, index, middle
@@ -330,12 +326,12 @@ class VuerPreprocessor:
                 left_q_target,
                 right_q_target,
             )
-            
+
         else:
             # Vision Pro
             left_landmarks = tv.left_landmarks.copy()
             right_landmarks = tv.right_landmarks.copy()
-        
+
 
         left_landmarks = tv.left_landmarks.copy()
         right_landmarks = tv.right_landmarks.copy()
@@ -368,26 +364,26 @@ class VuerPreprocessor:
         # if not hasattr(self, 'openxr_save_counter'):
         #     self.openxr_save_counter = 0
         #     self.openxr_save_interval = 150
-            
+
         # self.openxr_save_counter += 1
         # if self.openxr_save_counter >= self.openxr_save_interval:
         #     self.openxr_save_counter = 0
-            
+
         #     # 1. 创建索引列 (0 到 24)
         #     # 索引的 dtype 应该与坐标点数据类型一致，这里假设是 float
         #     indices = np.arange(unitree_left_hand.shape[0], dtype=unitree_left_hand.dtype).reshape(-1, 1)
-            
+
         #     # 2. 拼接索引和 XYZ 坐标
         #     # 结果 shape 将是 (25, 4)，结构为 [index, x, y, z]
         #     data_to_save = np.hstack((indices, unitree_left_hand))
-            
+
         #     timestamp = time.strftime("%Y%m%d_%H%M%S")
         #     filename = f"openxr_left_target_points_with_idx_{timestamp}.npy"
-            
+
         #     np.save(filename, data_to_save.copy())
         #     print(f"OpenXR Target Data Saved: {filename} (Shape: {data_to_save.shape})")
-        
-        # 26: 左手食指伸出  35： 完全伸出 
+
+        # 26: 左手食指伸出  35： 完全伸出
 
         # print("unitree_left_hand.shape:", unitree_left_hand.shape)
 
@@ -530,3 +526,137 @@ class VuerTeleop:
         # self.shm.close()
         # self.shm.unlink()
         self.tv.shutdown()
+
+
+class Quest3Teleop:
+    """
+    Meta Quest 3 Teleoperation class using TeleVuerWrapper.
+
+    Supports both hand tracking and controller tracking modes.
+    Based on Unitree's xr_teleoperate implementation.
+    """
+
+    def __init__(
+        self,
+        config_file_path,
+        img_shape=(720, 1280),
+        input_mode="hand",
+        display_mode="immersive",
+        binocular=True,
+        zmq=True,
+        webrtc=False,
+        webrtc_url=None,
+        cert_file=None,
+        key_file=None,
+    ):
+        """
+        Initialize Quest3Teleop.
+
+        :param config_file_path: Path to hand retargeting config
+        :param img_shape: Shape of camera image (height, width)
+        :param input_mode: "hand" for hand tracking, "controller" for Quest controllers
+        :param display_mode: "immersive", "pass-through", or "ego"
+        :param binocular: True for stereoscopic, False for monocular
+        :param zmq: Use ZMQ for image transmission
+        :param webrtc: Use WebRTC for real-time communication
+        :param webrtc_url: URL for WebRTC offer
+        :param cert_file: Path to SSL certificate
+        :param key_file: Path to SSL key
+        """
+        from teleop.robot_control.hand_retargeting import HandRetargeting, HandType
+        from teleop.televuer import TeleVuerWrapper
+
+        self.input_mode = input_mode
+        self.use_hand_tracking = input_mode == "hand"
+
+        # Initialize TeleVuerWrapper for Quest 3
+        self.tv_wrapper = TeleVuerWrapper(
+            use_hand_tracking=self.use_hand_tracking,
+            binocular=binocular,
+            img_shape=img_shape,
+            display_fps=30.0,
+            display_mode=display_mode,
+            zmq=zmq,
+            webrtc=webrtc,
+            webrtc_url=webrtc_url,
+            cert_file=cert_file,
+            key_file=key_file,
+        )
+
+        # Initialize hand retargeting for dexterous hand control
+        self.hand_retargeting = HandRetargeting(HandType.UNITREE_DEX3)
+
+        # Tip indices for hand retargeting
+        self.unitree_tip_indices = [4, 9, 14]  # [thumb, index, middle]
+
+        # Load retargeting config
+        RetargetingConfig.set_default_urdf_dir("../assets")
+        with Path(config_file_path).open("r") as f:
+            cfg = yaml.safe_load(f)
+        left_retargeting_config = RetargetingConfig.from_dict(cfg["left"])
+        right_retargeting_config = RetargetingConfig.from_dict(cfg["right"])
+        self.left_retargeting = left_retargeting_config.build()
+        self.right_retargeting = right_retargeting_config.build()
+
+    def step(self):
+        """
+        Get teleoperation data from Quest 3.
+
+        Returns:
+            tuple: (head_rmat, left_wrist_mat, right_wrist_mat,
+                   left_hand_targets, right_hand_targets)
+        """
+        # Get processed data from TeleVuerWrapper
+        tele_data = self.tv_wrapper.get_tele_data()
+
+        # Extract head rotation matrix
+        head_rmat = tele_data.head_pose[:3, :3]
+
+        # Get wrist poses (already transformed to robot convention)
+        left_wrist_mat = tele_data.left_wrist_pose.copy()
+        right_wrist_mat = tele_data.right_wrist_pose.copy()
+
+        # Process hand data for retargeting
+        left_q_target = None
+        right_q_target = None
+
+        if self.use_hand_tracking and tele_data.left_hand_pos is not None:
+            # Get hand joint positions
+            left_hand_pos = tele_data.left_hand_pos
+            right_hand_pos = tele_data.right_hand_pos
+
+            if not np.all(left_hand_pos == 0.0):
+                # Extract tip positions for retargeting
+                ref_left = left_hand_pos[self.unitree_tip_indices].copy()
+                ref_right = right_hand_pos[self.unitree_tip_indices].copy()
+
+                # Apply scaling factors for calibration
+                ref_left[0] *= 1.15
+                ref_left[1] *= 1.05
+                ref_left[2] *= 0.95
+
+                ref_right[0] *= 1.15
+                ref_right[1] *= 1.05
+                ref_right[2] *= 0.95
+
+                # Retarget to robot hand joint angles
+                left_q_target = self.hand_retargeting.left_retargeting.retarget(
+                    ref_left
+                )[self.hand_retargeting.right_dex_retargeting_to_hardware]
+                right_q_target = self.hand_retargeting.right_retargeting.retarget(
+                    ref_right
+                )[self.hand_retargeting.right_dex_retargeting_to_hardware]
+
+        return head_rmat, left_wrist_mat, right_wrist_mat, left_q_target, right_q_target
+
+    def get_tele_data(self):
+        """Get raw TeleData from TeleVuerWrapper."""
+        return self.tv_wrapper.get_tele_data()
+
+    def render_to_xr(self, img):
+        """Render image to Quest 3 display."""
+        self.tv_wrapper.render_to_xr(img)
+
+    def shutdown(self):
+        """Clean up resources."""
+        self.tv_wrapper.close()

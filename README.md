@@ -33,7 +33,48 @@ pip install -e .
 pip install -r requirements.txt
 ```
 
-## Apple Vision Pro (AVP) Setup Local streaming (Host and AVP)
+## XR Device Setup (Host and XR Device)
+
+This system supports both **Apple Vision Pro** and **Meta Quest 3** for teleoperation.
+
+### Option A: Meta Quest 3 Setup (Recommended for easier setup)
+
+Meta Quest 3 requires a simpler certificate setup than Apple Vision Pro.
+
+1. Check your local IP address:
+
+```bash
+ifconfig | grep inet
+```
+
+Suppose the local IP address of the ubuntu machine is `192.168.123.2`
+
+2. Generate a self-signed certificate:
+
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout key.pem -out cert.pem
+```
+
+3. Install the certificate to the config directory:
+
+```bash
+mkdir -p ~/.config/xr_teleoperate/
+cp cert.pem key.pem ~/.config/xr_teleoperate/
+```
+
+4. Open firewall on server:
+
+```bash
+sudo ufw allow 8012
+```
+
+5. Connect Quest 3 to the same WiFi network as your host computer.
+
+6. Open the Quest Browser and navigate to `https://192.168.123.2:8012?ws=wss://192.168.123.2:8012`
+
+7. Accept the certificate warning and click `Enter VR` to start the session.
+
+### Option B: Apple Vision Pro (AVP) Setup
 
 **Apple** does not allow WebXR on non-https connections. To test the application locally, we need to create a self-signed certificate and install it on the client. You need a ubuntu machine and a router. Connect the VisionPro and the ubuntu machine to the same router.
 
@@ -122,7 +163,7 @@ python realsense_server.py
 > Warning : All persons must maintain an adequate safety distance from the robot to avoid danger!
 
 1. Connect your host computer to G1. Then, set up your local IP address to 192.168.123.123 with netmask 255.255.255.0 on G1's network interface.
-2. Connect both your computer and AVP to the same local router wifi in which you set up your cert with.
+2. Connect both your computer and XR device (AVP or Quest 3) to the same local router wifi in which you set up your cert with.
 3. Open robot and set to sports mode (using remote control by pressing L1 + A, then L1 + UP, and lastly R1 + X when the G1 is gently touching the ground).
 4. On G1 PC: start the image server as above.
 5. On host computer: run
@@ -131,8 +172,33 @@ python realsense_server.py
 export CYCLONEDDS_URI="<CycloneDDS><Domain><General><NetworkInterfaceAddress>192.168.123.123</NetworkInterfaceAddress></General></Domain></CycloneDDS>"
 ```
 
-6. On host computer: run `python main.py --robot g1` under the `teleop/` directory and wait until the robot is in ready state. The terminal should signal both "master" and "worker" processes are waiting for starting signal.
-7. On AVP, connect to robot using https://<host_ip_address_on_your_local_router>:8012/?ws=wss://<host_ip_address_on_your_local_router>:8012. Then, press `Enter VR` and then `Allow` to enter the web interface for teleoperating the G1.
+6. On host computer: run the teleoperation script under the `teleop/` directory:
+
+**For Apple Vision Pro (default):**
+```bash
+python main.py --robot g1
+```
+
+**For Meta Quest 3 with hand tracking:**
+```bash
+python main.py --robot g1 --xr-device quest3 --input-mode hand
+```
+
+**For Meta Quest 3 with controllers:**
+```bash
+python main.py --robot g1 --xr-device quest3 --input-mode controller
+```
+
+**Command-line options:**
+| Option | Values | Description |
+|--------|--------|-------------|
+| `--xr-device` | `avp`, `quest3` | XR device type (default: `avp`) |
+| `--input-mode` | `hand`, `controller` | Input tracking mode (default: `hand`) |
+| `--display-mode` | `immersive`, `pass-through`, `ego` | Display mode (default: `immersive`) |
+
+Wait until the robot is in ready state. The terminal should signal both "master" and "worker" processes are waiting for starting signal.
+
+7. On your XR device, connect to robot using `https://<host_ip_address_on_your_local_router>:8012/?ws=wss://<host_ip_address_on_your_local_router>:8012`. Then, press `Enter VR` and then `Allow` to enter the web interface for teleoperating the G1.
 8. Back on host computer, enter `s` to start recording an episode.
 9. Type `q` and enter if the episode is successful, otherwise `d` and enter to discard the last session.
 10. Repeat by pressing `s` to start recording the next episode. Record 40 episodes for each task.
@@ -143,13 +209,14 @@ export CYCLONEDDS_URI="<CycloneDDS><Domain><General><NetworkInterfaceAddress>192
 This code builds upon following open-source code-bases. Please visit the URLs to see the respective LICENSES:
 
 1. https://github.com/unitreerobotics/avp_teleoperate
-2. https://github.com/OpenTeleVision/TeleVision
-3. https://github.com/dexsuite/dex-retargeting
-4. https://github.com/vuer-ai/vuer
-5. https://github.com/stack-of-tasks/pinocchio
-6. https://github.com/casadi/casadi
-7. https://github.com/meshcat-dev/meshcat-python
-8. https://github.com/zeromq/pyzmq
-9. https://github.com/unitreerobotics/unitree_dds_wrapper
-10. https://github.com/tonyzhaozh/act
-11. https://github.com/facebookresearch/detr
+2. https://github.com/unitreerobotics/xr_teleoperate
+3. https://github.com/OpenTeleVision/TeleVision
+4. https://github.com/dexsuite/dex-retargeting
+5. https://github.com/vuer-ai/vuer
+6. https://github.com/stack-of-tasks/pinocchio
+7. https://github.com/casadi/casadi
+8. https://github.com/meshcat-dev/meshcat-python
+9. https://github.com/zeromq/pyzmq
+10. https://github.com/unitreerobotics/unitree_dds_wrapper
+11. https://github.com/tonyzhaozh/act
+12. https://github.com/facebookresearch/detr
