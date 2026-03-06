@@ -77,6 +77,23 @@ class TeleopManager:
                 + G1_sizes.ODOM_QUATERNION_SIZE
                 + G1_sizes.HAND_PRESS_SIZE
             )
+        elif robot == "g1_inspire":
+            # G1 with Inspire FTP hands (no pressure sensors)
+            from constants import G1_Inspire_sizes
+
+            totalsize = (
+                G1_Inspire_sizes.LEG_STATE_SIZE
+                + G1_Inspire_sizes.ARM_STATE_SIZE
+                + G1_Inspire_sizes.HAND_STATE_SIZE
+                + G1_Inspire_sizes.IMU_QUATERNION_SIZE
+                + G1_Inspire_sizes.IMU_ACCELEROMETER_SIZE
+                + G1_Inspire_sizes.IMU_GYROSCOPE_SIZE
+                + G1_Inspire_sizes.IMU_RPY_SIZE
+                + G1_Inspire_sizes.ODOM_POSITION_SIZE
+                + G1_Inspire_sizes.ODOM_VELOCITY_SIZE
+                + G1_Inspire_sizes.ODOM_RPY_SIZE
+                + G1_Inspire_sizes.ODOM_QUATERNION_SIZE
+            )
 
         self.robot_data_shm = shared_memory.SharedMemory(
             create=True, size=totalsize * np.dtype(np.float64).itemsize

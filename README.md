@@ -27,6 +27,23 @@ pip install -e .
 > [!NOTE]
 > You need to fix the dds issue by manually removing any code relevant to \_\_domain\_\_
 
+## Install Inspire FTP Hand SDK (Host only, for G1 + Inspire hands)
+
+If using G1 with Inspire FTP dexterous hands (RH56DFTP) instead of Unitree Dex3 hands, install the Inspire hand SDK:
+
+```bash
+git clone https://github.com/NaCl-1374/inspire_hand_ws.git
+cd inspire_hand_ws
+pip install -e .
+```
+
+> [!NOTE]
+> The Inspire FTP hands use different DDS topics than the DFX variant:
+> - Control topics: `rt/inspire_hand/ctrl/l`, `rt/inspire_hand/ctrl/r`
+> - State topics: `rt/inspire_hand/state/l`, `rt/inspire_hand/state/r`
+>
+> For more details, see: https://github.com/unitreerobotics/xr_teleoperate/issues/48
+
 ## TeleVision and Apple Vision Pro configuration (Host only)
 
 ```bash
@@ -189,9 +206,24 @@ python main.py --robot g1 --xr-device quest3 --input-mode hand
 python main.py --robot g1 --xr-device quest3 --input-mode controller
 ```
 
+**For G1 with Inspire FTP hands (instead of Dex3):**
+```bash
+python main.py --robot g1_inspire
+```
+
+You can combine with any XR device option:
+```bash
+python main.py --robot g1_inspire --xr-device quest3 --input-mode hand
+```
+
+> [!NOTE]
+> The `g1_inspire` option uses the same G1 arm controller but with Inspire FTP dexterous hands.
+> Make sure you have installed the Inspire FTP Hand SDK (see dependencies section above).
+
 **Command-line options:**
 | Option | Values | Description |
 |--------|--------|-------------|
+| `--robot` | `g1`, `h1`, `g1_inspire` | Robot type (default: `g1`) |
 | `--xr-device` | `avp`, `quest3` | XR device type (default: `avp`) |
 | `--input-mode` | `hand`, `controller` | Input tracking mode (default: `hand`) |
 | `--display-mode` | `immersive`, `pass-through`, `ego` | Display mode (default: `immersive`) |

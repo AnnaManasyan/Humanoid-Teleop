@@ -1,10 +1,9 @@
 import os
 import sys
 import time
-from multiprocessing import Array, Event, Lock, Manager, Process, Queue, shared_memory
+from multiprocessing import Array, Lock, Process, shared_memory
 
 import numpy as np
-
 from lidar import LidarProcess
 from merger import DataMerger
 from robot_control.robot_arm import G1_29_ArmController, H1_2_ArmController
@@ -96,12 +95,47 @@ class RobotTaskmaster:
                 # self.arm_ctrl = H1ArmController()
                 # self.arm_ik = Arm_IK()
                 # self.hand_ctrl = H1HandController()
+            elif robot == "g1_inspire":
+                # G1 robot with Inspire FTP hands (not Dex3)
+                from robot_control.robot_hand_inspire import Inspire_Controller_FTP
+
+                logger.info("Using g1_inspire controllers (G1 + Inspire FTP hands)")
+                self.arm_ctrl = G1_29_ArmController()
+                self.arm_ik = G1_29_ArmIK(Visualization=False)
+                self.dual_hand_data_lock = Lock()
+                # Inspire FTP hands have 12 DOF (6 per hand)
+                dual_hand_state_array = Array(
+                    "d", 12, lock=False
+                )  # [output] current left, right hand state(12) data.
+                dual_hand_action_array = Array(
+                    "d", 12, lock=False
+                )  # [output] current left, right hand action(12) data.
+                # Shared memory for hand keypoints (same as h1)
+                self.hand_shm_left = shared_memory.SharedMemory(
+                    create=True, size=6 * np.dtype(np.float64).itemsize
+                )
+                self.lefthand_shm_array = np.ndarray(
+                    (6,), dtype=np.float64, buffer=self.hand_shm_left.buf
+                )
+                self.hand_shm_right = shared_memory.SharedMemory(
+                    create=True, size=6 * np.dtype(np.float64).itemsize
+                )
+                self.righthand_shm_array = np.ndarray(
+                    (6,), dtype=np.float64, buffer=self.hand_shm_right.buf
+                )
+                self.hand_ctrl = Inspire_Controller_FTP(
+                    self.lefthand_shm_array,
+                    self.righthand_shm_array,
+                    self.dual_hand_data_lock,
+                    dual_hand_state_array,
+                    dual_hand_action_array,
+                )
             else:
                 logger.error("unknown robot")
                 exit(-1)
         except Exception as e:
             logger.error(f"Master: failed initalizing controllers/ik_solvers: {e}")
-            logger.error(f"Master: exiting")
+            logger.error("Master: exiting")
             exit(-1)
 
         self.first = True
@@ -177,6 +211,11 @@ class RobotTaskmaster:
             if self.robot == "g1":
                 self.hand_shm.close()
                 self.hand_shm.unlink()
+            elif self.robot in ("h1", "g1_inspire"):
+                self.hand_shm_left.close()
+                self.hand_shm_left.unlink()
+                self.hand_shm_right.close()
+                self.hand_shm_right.unlink()
             logger.info("Master: exited")
 
     def get_robot_data(self):
@@ -188,6 +227,8 @@ class RobotTaskmaster:
             robot_sizes = G1_sizes
         elif self.robot == "h1":
             robot_sizes = H1_sizes
+        elif self.robot == "g1_inspire":
+            robot_sizes = G1_Inspire_sizes
 
         imustate = self.arm_ctrl.get_imu_data()
 
@@ -238,6 +279,17 @@ class RobotTaskmaster:
             self.robot_shm_array[
                 odom_quat_end : odom_quat_end + robot_sizes.HAND_PRESS_SIZE
             ] = hand_press_state.flatten()
+
+        elif self.robot == "g1_inspire":
+            # g1_inspire has odom but no hand pressure sensors
+            self.robot_shm_array[pos_start:velocity_start] = odomstate["position"]
+            self.robot_shm_array[velocity_start:odom_rpy_start] = odomstate["velocity"]
+            self.robot_shm_array[odom_rpy_start:odom_quat_start] = odomstate[
+                "orientation_rpy"
+            ]
+            self.robot_shm_array[odom_quat_start:odom_quat_end] = odomstate[
+                "orientation_quaternion"
+            ]
 
         # elif self.robot == "h1":
         #     self.robot_shm_array[rpy_start:] = imustate.rpy
@@ -308,6 +360,9 @@ class RobotTaskmaster:
                 with self.dual_hand_data_lock:
                     self.hand_shm_array[0:7] = left_qpos
                     self.hand_shm_array[7:14] = right_qpos
+            elif self.robot == "g1_inspire":
+                # g1_inspire uses same hand control as h1 (6 DOF per hand)
+                self.setHandMotors(right_qpos, left_qpos)
 
             # logger.debug("Master: writing data")
             # logger.debug(f"Master: head_rmat: {head_rmat}")

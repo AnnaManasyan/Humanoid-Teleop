@@ -11,7 +11,12 @@ if __name__ == "__main__":
         "--task_name", type=str, default="default_task", help="Name of the task"
     )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-    parser.add_argument("--robot", default="g1", help="Use h1/g1 controllers")
+    parser.add_argument(
+        "--robot",
+        default="g1",
+        choices=["g1", "h1", "g1_inspire"],
+        help="Robot type: g1 (G1 + Dex3), h1 (H1 + Inspire), g1_inspire (G1 + Inspire FTP hands)",
+    )
 
     # XR device selection
     parser.add_argument(
