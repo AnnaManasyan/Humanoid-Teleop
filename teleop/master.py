@@ -186,57 +186,14 @@ class RobotTaskmaster:
         logger.debug("Master: motor set")
         return True
 
-    # run_idx=0
     def setHandMotors(self, right_qpos, left_qpos):
-        # print(len(right_qpos))
         if right_qpos is not None and left_qpos is not None:
-            # Finger proximal joints: URDF [0, 1.7], hardware [0, 1.7] — direct
-            # right_hand_angles = [1.7-right_qpos[i] for i in range(6)]
-            # Use _0 (proximal) joints, range [0, 1.571]; normalize to [0,1]: (1.571-qpos)/1.571
-            right_hand_angles = [right_qpos[i] for i in [3,3,3,5,0,2]]
-            right_hand_angles[0]=(1.571-right_hand_angles[0])/1.571
-            right_hand_angles[1]=(1.571-right_hand_angles[1])/1.571
-            right_hand_angles[2]=(1.571-right_hand_angles[2])/1.571
-            right_hand_angles[3]=(1.571-right_hand_angles[3])/1.571
-            right_hand_angles[4]=-(right_hand_angles[4]+0.5)/0.5
-            right_hand_angles[5]=-right_hand_angles[5]
-            # Thumb pitch: URDF [0, 0.5] → hardware [0, 1.2]
-            # right_hand_angles.append(1.2-right_qpos[9]/0.3 * 1.2)
-            # Thumb yaw: URDF [-0.1, 1.3] → hardware [0, 0.5]
-            # right_hand_angles.append(0.5-(right_qpos[8] + 0.1) / 1.4 * 0.5)
-            # print(right_qpos[8], right_qpos[9])
-            # self.boundaries = (min(self.boundaries[0], right_qpos[4]), max(self.boundaries[1], right_qpos[4]))
-            # print(self.boundaries)
-
-            # print(left_qpos)
-            # Left DEX3 finger joints have opposite sign vs right: range [-1.745, 0] (0=open, -=closed)
-            # Use +1.7 instead of 1.7- to map [-1.745,0] → [0,1.7]
-            # Left _0 joints range [-1.571, 0]; normalize to [0,1]: (1.571+qpos)/1.571
-            left_hand_angles = [left_qpos[i] for i in [3,3,3,5,0,2]]
-            left_hand_angles[0]=(1.571+left_hand_angles[0])/1.571
-            left_hand_angles[1]=(1.571+left_hand_angles[1])/1.571
-            left_hand_angles[2]=(1.571+left_hand_angles[2])/1.571
-            left_hand_angles[3]=(1.571+left_hand_angles[3])/1.571
-            left_hand_angles[4]=-(left_hand_angles[4]+0.5)/0.5
-            # Left thumb_2 range is [0, 1.745] (opposite of right's [-1.745,0]), no negation needed
-            left_hand_angles[5]=left_hand_angles[5]
-            # left_hand_angles.append(1.2-left_qpos[9]/0.3 * 1.2)
-            # left_hand_angles.append(0.5-(left_qpos[8] + 0.1) / 1.4 * 0.5)
+            # Values are already in hardware format [0,1] (1=open, 0=closed)
+            # from opt_hand_retargeting. Order: [pinky, ring, middle, index, thumb_bend, thumb_rotation]
+            # First 6 values are the motor targets, 7th is unused padding.
+            left_hand_angles = list(left_qpos[:6])
+            right_hand_angles = list(right_qpos[:6])
             self.hand_ctrl.ctrl(left_hand_angles, right_hand_angles)
-
-            # self.run_idx+=1
-            # if self.run_idx%20==0:
-            #     print(f"thumb_pitch qpos[9]: {right_qpos[9]:.3f}thumb_pitch qpos[8]: {right_qpos[8]:.3f}")
-
-
-            # if self.hand_ctrl is not None:
-            #     self.hand_ctrl.ctrl_dual_hand(right_hand_angles, left_hand_angles)
-            # else:   
-            #     print("TODO")
-
-            # self.left_hand_array[:] = left_qpos
-            # self.right_hand_array[:] = right_qpos
-            # self.hand_ctrl.ctrl_dual_hand(right_qpos, left_qpos)
         return left_qpos, right_qpos
 
     def start(self):

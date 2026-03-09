@@ -1,0 +1,558 @@
+<mujoco model="inspire_hand_retargeting">
+  <option gravity="0 0 0" integrator="Euler" timestep="0.01"/>
+  <compiler angle="radian"/>
+  <statistic center="0.3 0 1.2" extent="0.6"/>
+  <visual>
+    <headlight ambient="0.4 0.4 0.4" diffuse="0.8 0.8 0.8"/>
+  </visual>
+
+  <asset>
+    <mesh name="R_hand_base_link" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_base_link.obj"/>
+    <mesh name="R_thumb_proximal_base" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_thumb_proximal_base.obj"/>
+    <mesh name="R_thumb_proximal" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_thumb_proximal.obj"/>
+    <mesh name="R_thumb_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_thumb_intermediate.obj"/>
+    <mesh name="R_thumb_distal" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_thumb_distal.obj"/>
+    <mesh name="R_index_proximal" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_index_proximal.obj"/>
+    <mesh name="R_index_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_index_intermediate.obj"/>
+    <mesh name="R_middle_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_middle_intermediate.obj"/>
+    <mesh name="R_pinky_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_pinky_intermediate.obj"/>
+    <mesh name="L_hand_base_link" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_base_link.obj"/>
+    <mesh name="L_thumb_proximal_base" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_thumb_proximal_base.obj"/>
+    <mesh name="L_thumb_proximal" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_thumb_proximal.obj"/>
+    <mesh name="L_thumb_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_thumb_intermediate.obj"/>
+    <mesh name="L_thumb_distal" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_thumb_distal.obj"/>
+    <mesh name="L_index_proximal" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_index_proximal.obj"/>
+    <mesh name="L_index_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_index_intermediate.obj"/>
+    <mesh name="L_middle_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_middle_intermediate.obj"/>
+    <mesh name="L_pinky_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_pinky_intermediate.obj"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 3" dir="0 0 -1" diffuse="0.8 0.8 0.8"/>
+    <geom type="plane" size="3 3 0.01" rgba="0.12 0.12 0.12 1"/>
+
+    <body name="R_root" pos="0.15 0 0.15">
+      <body name="R_hand_base_link" pos="0 0 0" quat="0.00000094 -0.00000094 -0.70710454 0.70710902">
+        <geom type="mesh" mesh="R_hand_base_link" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+        <body name="R_thumb_proximal_base" pos="-0.01696 -0.0691 -0.02045" quat="0.49999816 0.50000000 -0.50000000 0.50000184">
+          <joint name="R_thumb_proximal_yaw_joint" type="hinge" axis="0 0 -1" range="0.0 1.308"/>
+          <geom type="mesh" mesh="R_thumb_proximal_base" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+          <body name="R_thumb_proximal" pos="-0.0088099 0.010892 -0.00925" quat="0.09968430 0.09968466 0.70004629 0.70004372">
+            <joint name="R_thumb_proximal_pitch_joint" type="hinge" axis="0 0 1" range="0 0.6"/>
+            <geom type="mesh" mesh="R_thumb_proximal" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+            <body name="R_thumb_intermediate" pos="0.04407 0.034553 -0.0008">
+              <joint name="R_thumb_intermediate_joint" type="hinge" axis="0 0 1" range="0 0.8"/>
+              <geom type="mesh" mesh="R_thumb_intermediate" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+              <body name="R_thumb_distal" pos="0.020248 0.010156 -0.0012">
+                <joint name="R_thumb_distal_joint" type="hinge" axis="0 0 1" range="0 0.4"/>
+                <geom type="mesh" mesh="R_thumb_distal" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+                <body name="R_thumb_tip" pos="0.0202 0.0140 -0.006">
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="R_index_proximal" pos="0.00028533 -0.13653 -0.032268" quat="0.01744544 -0.99984782 0.00000000 0.00000000">
+          <joint name="R_index_proximal_joint" type="hinge" axis="0 0 1" range="0 1.47"/>
+          <geom type="mesh" mesh="R_index_proximal" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+          <body name="R_index_intermediate" pos="-0.0026138 0.032026 -0.001">
+            <joint name="R_index_intermediate_joint" type="hinge" axis="0 0 1" range="-0.04545 1.56"/>
+            <geom type="mesh" mesh="R_index_intermediate" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+            <body name="R_index_tip" pos="-0.0008 0.045 -0.005">
+            </body>
+          </body>
+        </body>
+        <body name="R_middle_proximal" pos="0.00028533 -0.1371 -0.01295" quat="-0.00000367 -1.00000000 0.00000000 0.00000000">
+          <joint name="R_middle_proximal_joint" type="hinge" axis="0 0 1" range="0 1.47"/>
+          <geom type="mesh" mesh="R_index_proximal" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+          <body name="R_middle_intermediate" pos="-0.0024229 0.032041 -0.001">
+            <joint name="R_middle_intermediate_joint" type="hinge" axis="0 0 1" range="-0.04545 1.56"/>
+            <geom type="mesh" mesh="R_middle_intermediate" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+            <body name="R_middle_tip" pos="-0.001 0.048 -0.005">
+            </body>
+          </body>
+        </body>
+        <body name="R_ring_proximal" pos="0.00028533 -0.13691 0.0062872" quat="0.02619333 0.99965690 0.00000000 0.00000000">
+          <joint name="R_ring_proximal_joint" type="hinge" axis="0 0 1" range="0 1.47"/>
+          <geom type="mesh" mesh="R_index_proximal" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+          <body name="R_ring_intermediate" pos="-0.0024229 0.032041 -0.001">
+            <joint name="R_ring_intermediate_joint" type="hinge" axis="0 0 1" range="-0.04545 1.56"/>
+            <geom type="mesh" mesh="R_index_intermediate" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+            <body name="R_ring_tip" pos="-0.0008 0.045 -0.005">
+            </body>
+          </body>
+        </body>
+        <body name="R_pinky_proximal" pos="0.00028533 -0.13571 0.025488" quat="0.05232242 0.99863024 0.00000000 0.00000000">
+          <joint name="R_pinky_proximal_joint" type="hinge" axis="0 0 1" range="0 1.47"/>
+          <geom type="mesh" mesh="R_index_proximal" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+          <body name="R_pinky_intermediate" pos="-0.0024229 0.032041 -0.001">
+            <joint name="R_pinky_intermediate_joint" type="hinge" axis="0 0 1" range="-0.04545 1.56"/>
+            <geom type="mesh" mesh="R_pinky_intermediate" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+            <body name="R_pinky_tip" pos="-0.0008 0.037 -0.005">
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <body name="L_root" pos="-0.15 0 0.15">
+      <body name="L_hand_base_link" pos="0 0 0" quat="0.00000094 -0.00000094 -0.70710677 0.70710679">
+        <geom type="mesh" mesh="L_hand_base_link" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+        <body name="L_thumb_proximal_base" pos="-0.01696 -0.0691 0.02045" quat="0.49999816 0.50000000 -0.50000000 0.50000184">
+          <joint name="L_thumb_proximal_yaw_joint" type="hinge" axis="0 0 1" range="0 1.308"/>
+          <geom type="mesh" mesh="L_thumb_proximal_base" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+          <body name="L_thumb_proximal" pos="0.0099867 0.0098242 -0.0089" quat="0.70457088 -0.70457347 -0.05981695 0.05981673">
+            <joint name="L_thumb_proximal_pitch_joint" type="hinge" axis="0 0 -1" range="0 0.6"/>
+            <geom type="mesh" mesh="L_thumb_proximal" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+            <body name="L_thumb_intermediate" pos="0.04407 -0.034553 -0.0008">
+              <joint name="L_thumb_intermediate_joint" type="hinge" axis="0 0 -1" range="0 0.8"/>
+              <geom type="mesh" mesh="L_thumb_intermediate" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+              <body name="L_thumb_distal" pos="0.020248 -0.010156 -0.0012">
+                <joint name="L_thumb_distal_joint" type="hinge" axis="0 0 -1" range="0 0.4"/>
+                <geom type="mesh" mesh="L_thumb_distal" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+                <body name="L_thumb_tip" pos="0.0202 -0.0140 -0.006">
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="L_index_proximal" pos="0.00028533 -0.13653 0.032268" quat="0.99984769 -0.01745261 0.00000000 0.00000000">
+          <joint name="L_index_proximal_joint" type="hinge" axis="0 0 -1" range="0 1.47"/>
+          <geom type="mesh" mesh="L_index_proximal" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+          <body name="L_index_intermediate" pos="-0.0026138 -0.032026 -0.001">
+            <joint name="L_index_intermediate_joint" type="hinge" axis="0 0 -1" range="-0.04545 1.56"/>
+            <geom type="mesh" mesh="L_index_intermediate" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+            <body name="L_index_tip" pos="-0.0008 -0.045 -0.005">
+            </body>
+          </body>
+        </body>
+        <body name="L_middle_proximal" pos="0.00028533 -0.1371 0.01295">
+          <joint name="L_middle_proximal_joint" type="hinge" axis="0 0 -1" range="0 1.47"/>
+          <geom type="mesh" mesh="L_index_proximal" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+          <body name="L_middle_intermediate" pos="-0.0024229 -0.032041 -0.001">
+            <joint name="L_middle_intermediate_joint" type="hinge" axis="0 0 -1" range="-0.04545 1.56"/>
+            <geom type="mesh" mesh="L_middle_intermediate" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+            <body name="L_middle_tip" pos="-0.001 -0.048 -0.005">
+            </body>
+          </body>
+        </body>
+        <body name="L_ring_proximal" pos="0.00028533 -0.13691 -0.0062872" quat="0.99965732 0.02617701 0.00000000 0.00000000">
+          <joint name="L_ring_proximal_joint" type="hinge" axis="0 0 -1" range="0 1.47"/>
+          <geom type="mesh" mesh="L_index_proximal" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+          <body name="L_ring_intermediate" pos="-0.0024229 -0.032041 -0.001">
+            <joint name="L_ring_intermediate_joint" type="hinge" axis="0 0 -1" range="-0.04545 1.56"/>
+            <geom type="mesh" mesh="L_index_intermediate" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+            <body name="L_ring_tip" pos="-0.0008 -0.045 -0.005">
+            </body>
+          </body>
+        </body>
+        <body name="L_pinky_proximal" pos="0.00028533 -0.13571 -0.025488" quat="0.99862953 0.05233608 0.00000000 0.00000000">
+          <joint name="L_pinky_proximal_joint" type="hinge" axis="0 0 -1" range="0 1.47"/>
+          <geom type="mesh" mesh="L_index_proximal" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+          <body name="L_pinky_intermediate" pos="-0.0024229 -0.032041 -0.001">
+            <joint name="L_pinky_intermediate_joint" type="hinge" axis="0 0 -1" range="-0.04545 1.56"/>
+            <geom type="mesh" mesh="L_pinky_intermediate" rgba="0.8 0.75 0.7 1" contype="0" conaffinity="0" pos="0 0 0"/>
+            <body name="L_pinky_tip" pos="-0.0008 -0.037 -0.005">
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <body name="L0" mocap="true" pos="0 0 -1">
+      <site name="L0s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="1.0 1.0 1.0 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L1" mocap="true" pos="0 0 -1">
+      <site name="L1s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L2" mocap="true" pos="0 0 -1">
+      <site name="L2s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L3" mocap="true" pos="0 0 -1">
+      <site name="L3s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L4" mocap="true" pos="0 0 -1">
+      <site name="L4s" size="0.001"/>
+      <geom type="sphere" size="0.006" rgba="0.9 0.2 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L5" mocap="true" pos="0 0 -1">
+      <site name="L5s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L6" mocap="true" pos="0 0 -1">
+      <site name="L6s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L7" mocap="true" pos="0 0 -1">
+      <site name="L7s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L8" mocap="true" pos="0 0 -1">
+      <site name="L8s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L9" mocap="true" pos="0 0 -1">
+      <site name="L9s" size="0.001"/>
+      <geom type="sphere" size="0.006" rgba="0.2 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L10" mocap="true" pos="0 0 -1">
+      <site name="L10s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.4 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L11" mocap="true" pos="0 0 -1">
+      <site name="L11s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.4 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L12" mocap="true" pos="0 0 -1">
+      <site name="L12s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.4 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L13" mocap="true" pos="0 0 -1">
+      <site name="L13s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.4 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L14" mocap="true" pos="0 0 -1">
+      <site name="L14s" size="0.001"/>
+      <geom type="sphere" size="0.006" rgba="0.2 0.4 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L15" mocap="true" pos="0 0 -1">
+      <site name="L15s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L16" mocap="true" pos="0 0 -1">
+      <site name="L16s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L17" mocap="true" pos="0 0 -1">
+      <site name="L17s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L18" mocap="true" pos="0 0 -1">
+      <site name="L18s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L19" mocap="true" pos="0 0 -1">
+      <site name="L19s" size="0.001"/>
+      <geom type="sphere" size="0.006" rgba="0.9 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L20" mocap="true" pos="0 0 -1">
+      <site name="L20s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L21" mocap="true" pos="0 0 -1">
+      <site name="L21s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L22" mocap="true" pos="0 0 -1">
+      <site name="L22s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L23" mocap="true" pos="0 0 -1">
+      <site name="L23s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="L24" mocap="true" pos="0 0 -1">
+      <site name="L24s" size="0.001"/>
+      <geom type="sphere" size="0.006" rgba="0.9 0.2 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R0" mocap="true" pos="0 0 -1">
+      <site name="R0s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="1.0 1.0 1.0 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R1" mocap="true" pos="0 0 -1">
+      <site name="R1s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R2" mocap="true" pos="0 0 -1">
+      <site name="R2s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R3" mocap="true" pos="0 0 -1">
+      <site name="R3s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R4" mocap="true" pos="0 0 -1">
+      <site name="R4s" size="0.001"/>
+      <geom type="sphere" size="0.006" rgba="0.9 0.2 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R5" mocap="true" pos="0 0 -1">
+      <site name="R5s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R6" mocap="true" pos="0 0 -1">
+      <site name="R6s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R7" mocap="true" pos="0 0 -1">
+      <site name="R7s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R8" mocap="true" pos="0 0 -1">
+      <site name="R8s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R9" mocap="true" pos="0 0 -1">
+      <site name="R9s" size="0.001"/>
+      <geom type="sphere" size="0.006" rgba="0.2 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R10" mocap="true" pos="0 0 -1">
+      <site name="R10s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.4 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R11" mocap="true" pos="0 0 -1">
+      <site name="R11s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.4 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R12" mocap="true" pos="0 0 -1">
+      <site name="R12s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.4 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R13" mocap="true" pos="0 0 -1">
+      <site name="R13s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.2 0.4 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R14" mocap="true" pos="0 0 -1">
+      <site name="R14s" size="0.001"/>
+      <geom type="sphere" size="0.006" rgba="0.2 0.4 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R15" mocap="true" pos="0 0 -1">
+      <site name="R15s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R16" mocap="true" pos="0 0 -1">
+      <site name="R16s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R17" mocap="true" pos="0 0 -1">
+      <site name="R17s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R18" mocap="true" pos="0 0 -1">
+      <site name="R18s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R19" mocap="true" pos="0 0 -1">
+      <site name="R19s" size="0.001"/>
+      <geom type="sphere" size="0.006" rgba="0.9 0.9 0.2 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R20" mocap="true" pos="0 0 -1">
+      <site name="R20s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R21" mocap="true" pos="0 0 -1">
+      <site name="R21s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R22" mocap="true" pos="0 0 -1">
+      <site name="R22s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R23" mocap="true" pos="0 0 -1">
+      <site name="R23s" size="0.001"/>
+      <geom type="sphere" size="0.004" rgba="0.9 0.2 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+    <body name="R24" mocap="true" pos="0 0 -1">
+      <site name="R24s" size="0.001"/>
+      <geom type="sphere" size="0.006" rgba="0.9 0.2 0.9 0.4" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+
+  <tendon>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.2 0.3">
+      <site site="L0s"/>
+      <site site="L1s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.2 0.3">
+      <site site="L1s"/>
+      <site site="L2s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.2 0.3">
+      <site site="L2s"/>
+      <site site="L3s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.2 0.3">
+      <site site="L3s"/>
+      <site site="L4s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.9 0.2 0.3">
+      <site site="L0s"/>
+      <site site="L5s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.9 0.2 0.3">
+      <site site="L5s"/>
+      <site site="L6s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.9 0.2 0.3">
+      <site site="L6s"/>
+      <site site="L7s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.9 0.2 0.3">
+      <site site="L7s"/>
+      <site site="L8s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.9 0.2 0.3">
+      <site site="L8s"/>
+      <site site="L9s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.4 0.9 0.3">
+      <site site="L0s"/>
+      <site site="L10s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.4 0.9 0.3">
+      <site site="L10s"/>
+      <site site="L11s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.4 0.9 0.3">
+      <site site="L11s"/>
+      <site site="L12s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.4 0.9 0.3">
+      <site site="L12s"/>
+      <site site="L13s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.4 0.9 0.3">
+      <site site="L13s"/>
+      <site site="L14s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.9 0.2 0.3">
+      <site site="L0s"/>
+      <site site="L15s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.9 0.2 0.3">
+      <site site="L15s"/>
+      <site site="L16s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.9 0.2 0.3">
+      <site site="L16s"/>
+      <site site="L17s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.9 0.2 0.3">
+      <site site="L17s"/>
+      <site site="L18s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.9 0.2 0.3">
+      <site site="L18s"/>
+      <site site="L19s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.9 0.3">
+      <site site="L0s"/>
+      <site site="L20s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.9 0.3">
+      <site site="L20s"/>
+      <site site="L21s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.9 0.3">
+      <site site="L21s"/>
+      <site site="L22s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.9 0.3">
+      <site site="L22s"/>
+      <site site="L23s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.9 0.3">
+      <site site="L23s"/>
+      <site site="L24s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.2 0.3">
+      <site site="R0s"/>
+      <site site="R1s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.2 0.3">
+      <site site="R1s"/>
+      <site site="R2s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.2 0.3">
+      <site site="R2s"/>
+      <site site="R3s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.2 0.3">
+      <site site="R3s"/>
+      <site site="R4s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.9 0.2 0.3">
+      <site site="R0s"/>
+      <site site="R5s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.9 0.2 0.3">
+      <site site="R5s"/>
+      <site site="R6s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.9 0.2 0.3">
+      <site site="R6s"/>
+      <site site="R7s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.9 0.2 0.3">
+      <site site="R7s"/>
+      <site site="R8s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.9 0.2 0.3">
+      <site site="R8s"/>
+      <site site="R9s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.4 0.9 0.3">
+      <site site="R0s"/>
+      <site site="R10s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.4 0.9 0.3">
+      <site site="R10s"/>
+      <site site="R11s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.4 0.9 0.3">
+      <site site="R11s"/>
+      <site site="R12s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.4 0.9 0.3">
+      <site site="R12s"/>
+      <site site="R13s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.2 0.4 0.9 0.3">
+      <site site="R13s"/>
+      <site site="R14s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.9 0.2 0.3">
+      <site site="R0s"/>
+      <site site="R15s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.9 0.2 0.3">
+      <site site="R15s"/>
+      <site site="R16s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.9 0.2 0.3">
+      <site site="R16s"/>
+      <site site="R17s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.9 0.2 0.3">
+      <site site="R17s"/>
+      <site site="R18s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.9 0.2 0.3">
+      <site site="R18s"/>
+      <site site="R19s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.9 0.3">
+      <site site="R0s"/>
+      <site site="R20s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.9 0.3">
+      <site site="R20s"/>
+      <site site="R21s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.9 0.3">
+      <site site="R21s"/>
+      <site site="R22s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.9 0.3">
+      <site site="R22s"/>
+      <site site="R23s"/>
+    </spatial>
+    <spatial limited="false" width="0.001" rgba="0.9 0.2 0.9 0.3">
+      <site site="R23s"/>
+      <site site="R24s"/>
+    </spatial>
+  </tendon>
+</mujoco>
