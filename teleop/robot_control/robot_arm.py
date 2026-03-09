@@ -94,7 +94,9 @@ class BaseArmController:
         self._gradual_time = None
 
         # Initialize DDS communication
-        ChannelFactoryInitialize(0)
+        ChannelFactoryInitialize(0, "enx50a030012e31")
+        # ChannelFactoryInitialize(0, "enp4s0")
+
         self.lowcmd_publisher = ChannelPublisher(kTopicLowCommand, LowCmd_)
         self.lowcmd_publisher.Init()
         self.lowstate_subscriber = ChannelSubscriber(kTopicLowState, LowState_)
@@ -330,6 +332,8 @@ class BaseArmController:
         """Reset controller to initial state."""
         logger.info("controller: resetting")
         self.q_target = np.zeros(14)
+        self.q_target[3]=-0.3
+        self.q_target[10]=-0.3
         self.tauff_target = np.zeros(14)
         self.lowstate_buffer = DataBuffer()
         self.stop_event.clear()

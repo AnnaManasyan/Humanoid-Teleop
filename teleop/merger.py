@@ -27,6 +27,8 @@ class DataMerger:
         return True, closest_ik_entry
 
     def _lidar_is_ready(self, lidar_time_list, time_key):
+        if not lidar_time_list:
+            return False, None
         closest_lidar_entry = min(lidar_time_list, key=lambda x: abs(x - time_key))
         if abs(closest_lidar_entry - time_key) > DELAY / 2:
             return False, None
@@ -35,11 +37,13 @@ class DataMerger:
     def merge_json(self):
         lidar_time_list = []
 
-        lidar_files = [
-            f
-            for f in os.listdir(self.lidar_data_path)
-            if os.path.isfile(os.path.join(self.lidar_data_path, f))
-        ]
+        lidar_files = []
+        if os.path.isdir(self.lidar_data_path):
+            lidar_files = [
+                f
+                for f in os.listdir(self.lidar_data_path)
+                if os.path.isfile(os.path.join(self.lidar_data_path, f))
+            ]
 
         for lidar_file_name in lidar_files:
             time_parts = lidar_file_name.split(".")[0:2]

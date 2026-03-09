@@ -159,24 +159,31 @@ class OpenTeleVision:
 
     async def on_hand_move(self, event, session, fps=30):
         try:
-            # with self.left_hand_shared.get_lock():  # Use the lock to ensure thread-safe updates
-            #     self.left_hand_shared[:] = event.value["leftHand"]
-            # with self.right_hand_shared.get_lock():
-            #     self.right_hand_shared[:] = event.value["rightHand"]
-            # with self.left_landmarks_shared.get_lock():
-            #     self.left_landmarks_shared[:] = np.array(event.value["leftLandmarks"]).flatten()
-            # with self.right_landmarks_shared.get_lock():
-            #     self.right_landmarks_shared[:] = np.array(event.value["rightLandmarks"]).flatten()
-            self.left_hand_shared[:] = event.value["leftHand"]
-            self.right_hand_shared[:] = event.value["rightHand"]
-            self.left_landmarks_shared[:] = np.array(
-                event.value["leftLandmarks"]
-            ).flatten()
-            self.right_landmarks_shared[:] = np.array(
-                event.value["rightLandmarks"]
-            ).flatten()
-        except:
+            lh = event.value.get("leftHand")
+            rh = event.value.get("rightHand")
+            ll = event.value.get("leftLandmarks")
+            rl = event.value.get("rightLandmarks")
+            # Quest 3 sends ExtType sentinel when a hand is not tracked — skip those
+            # Also check first element is a real number/list, not an ExtType
+            if isinstance(lh, list) and len(lh) == 16 and isinstance(lh[0], (int, float)):
+                self.left_hand_shared[:] = lh
+            if isinstance(rh, list) and len(rh) == 16 and isinstance(rh[0], (int, float)):
+                self.right_hand_shared[:] = rh
+            if isinstance(ll, list) and len(ll) == 25 and isinstance(ll[0], (list, tuple)):
+                flat = np.array(ll).flatten()
+                if len(flat) == 75:
+                    self.left_landmarks_shared[:] = flat
+
+                # self.left_landmarks_shared[:] = np.array(ll).flatten()
+            if isinstance(rl, list) and len(rl) == 25 and isinstance(rl[0], (list, tuple)):
+                self.right_landmarks_shared[:] = np.array(rl).flatten()
+        except Exception as e:
+            # print(f"[HAND_MOVE] ERROR: {e}")
+            # print(f"[HAND_MOVE] raw event.value: {event.value}")        except Exception:
             pass
+
+
+
 
     async def main_webrtc(self, session, fps=30):
         session.set @ DefaultScene(frameloop="always")
@@ -263,6 +270,7 @@ class OpenTeleVision:
                 to="bgChildren",
             )
             await asyncio.sleep(0.03)
+
 
     @property
     def left_hand(self):

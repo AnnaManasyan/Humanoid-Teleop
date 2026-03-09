@@ -3,10 +3,10 @@ class Modality:
         self.robot_type = robot_type.lower()
         if self.robot_type == "g1":
             self.modality_sizes_dict = self._build_g1_sizes()
+        if self.robot_type == "g1_inspire":
+            self.modality_sizes_dict = self._build_g1_inspire_sizes()
         elif self.robot_type == "h1":
             self.modality_sizes_dict = self._build_h1_sizes()
-        elif self.robot_type == "g1_inspire":
-            self.modality_sizes_dict = self._build_g1_inspire_sizes()
         else:
             raise ValueError(f"Unsupported robot type: {robot_type}")
 
@@ -22,15 +22,11 @@ class Modality:
             "imu_accelerometer",
             "imu_gyroscope",
             "imu_rpy",
-            "odom_position",
-            "odom_velocity",
-            "odom_rpy",
-            "odom_quaternion",
         ]
         if self.robot_type == "g1":
-            base_order.append("hand_press")
-        # g1_inspire does not have hand_press (no pressure sensors on Inspire FTP hands)
+            base_order.extend(["odom_position", "odom_velocity", "odom_rpy", "odom_quaternion", "hand_press"])
         return base_order
+
 
     def _build_g1_sizes(self):
         return {
@@ -48,6 +44,22 @@ class Modality:
             "hand_press": G1_sizes.HAND_PRESS_SIZE,
         }
 
+    def _build_g1_inspire_sizes(self):
+        return {
+            "leg": G1_inspire_sizes.LEG_STATE_SIZE,
+            "arm": G1_inspire_sizes.ARM_STATE_SIZE,
+            "hand": G1_inspire_sizes.HAND_STATE_SIZE,
+            "imu_quaternion": G1_inspire_sizes.IMU_QUATERNION_SIZE,
+            "imu_accelerometer": G1_inspire_sizes.IMU_ACCELEROMETER_SIZE,
+            "imu_gyroscope": G1_inspire_sizes.IMU_GYROSCOPE_SIZE,
+            "imu_rpy": G1_inspire_sizes.IMU_RPY_SIZE,
+            # "odom_position": G1_inspire_sizes.ODOM_POSITION_SIZE,
+            # "odom_velocity": G1_inspire_sizes.ODOM_VELOCITY_SIZE,
+            # "odom_rpy": G1_inspire_sizes.ODOM_RPY_SIZE,
+            # "odom_quaternion": G1_inspire_sizes.ODOM_QUATERNION_SIZE,
+            # "hand_press": G1_inspire_sizes.HAND_PRESS_SIZE,
+        }
+
     def _build_h1_sizes(self):
         return {
             "leg": H1_sizes.LEG_STATE_SIZE,
@@ -61,21 +73,6 @@ class Modality:
             # "odom_velocity": H1_sizes.ODOM_VELOCITY_SIZE,
             # "odom_rpy": H1_sizes.ODOM_RPY_SIZE,
             # "odom_quaternion": H1_sizes.ODOM_QUATERNION_SIZE,
-        }
-
-    def _build_g1_inspire_sizes(self):
-        return {
-            "leg": G1_Inspire_sizes.LEG_STATE_SIZE,
-            "arm": G1_Inspire_sizes.ARM_STATE_SIZE,
-            "hand": G1_Inspire_sizes.HAND_STATE_SIZE,
-            "imu_quaternion": G1_Inspire_sizes.IMU_QUATERNION_SIZE,
-            "imu_accelerometer": G1_Inspire_sizes.IMU_ACCELEROMETER_SIZE,
-            "imu_gyroscope": G1_Inspire_sizes.IMU_GYROSCOPE_SIZE,
-            "imu_rpy": G1_Inspire_sizes.IMU_RPY_SIZE,
-            "odom_position": G1_Inspire_sizes.ODOM_POSITION_SIZE,
-            "odom_velocity": G1_Inspire_sizes.ODOM_VELOCITY_SIZE,
-            "odom_rpy": G1_Inspire_sizes.ODOM_RPY_SIZE,
-            "odom_quaternion": G1_Inspire_sizes.ODOM_QUATERNION_SIZE,
         }
 
     def _compute_start_indices(self) -> dict:
@@ -115,6 +112,19 @@ class G1_sizes:
     ODOM_RPY_SIZE = 3
     ODOM_QUATERNION_SIZE = 4
 
+class G1_inspire_sizes:
+    LEG_STATE_SIZE = 15
+    ARM_STATE_SIZE = 14
+    HAND_STATE_SIZE = 12
+    IMU_QUATERNION_SIZE = 4
+    IMU_ACCELEROMETER_SIZE = 3
+    IMU_GYROSCOPE_SIZE = 3
+    IMU_RPY_SIZE = 3
+    HAND_PRESS_SIZE = 216
+    ODOM_POSITION_SIZE = 3
+    ODOM_VELOCITY_SIZE = 3
+    ODOM_RPY_SIZE = 3
+    ODOM_QUATERNION_SIZE = 4
 
 class H1_sizes:
     LEG_STATE_SIZE = 13
@@ -128,19 +138,3 @@ class H1_sizes:
     # ODOM_VELOCITY_SIZE = 3
     # ODOM_RPY_SIZE = 3
     # ODOM_QUATERNION_SIZE = 4
-
-
-class G1_Inspire_sizes:
-    """G1 robot with Inspire FTP dexterous hands (not Dex3)"""
-    LEG_STATE_SIZE = 15       # Same as G1
-    ARM_STATE_SIZE = 14       # Same as G1
-    HAND_STATE_SIZE = 12      # Inspire hands (6 per hand)
-    IMU_QUATERNION_SIZE = 4
-    IMU_ACCELEROMETER_SIZE = 3
-    IMU_GYROSCOPE_SIZE = 3
-    IMU_RPY_SIZE = 3
-    # No HAND_PRESS_SIZE (Inspire FTP hands don't have pressure sensors)
-    ODOM_POSITION_SIZE = 3
-    ODOM_VELOCITY_SIZE = 3
-    ODOM_RPY_SIZE = 3
-    ODOM_QUATERNION_SIZE = 4

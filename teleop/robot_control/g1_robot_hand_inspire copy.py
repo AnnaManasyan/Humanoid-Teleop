@@ -1,21 +1,27 @@
 # this file is legacy, need to fix.
 from unitree_sdk2py.core.channel import ChannelPublisher, ChannelSubscriber, ChannelFactoryInitialize # dds
-from unitree_sdk2py.idl.unitree_go.msg.dds_ import MotorCmds_, MotorStates_                           # idl
-from unitree_sdk2py.idl.default import unitree_go_msg_dds__MotorCmd_
+# from unitree_sdk2py.idl.unitree_go.msg.dds_ import MotorCmds_, MotorStates_                           # idl
+# from unitree_sdk2py.idl.default import unitree_go_msg_dds__MotorCmd_
+# from inspire_sdkpy.inspire_dds import inspire_hand_ctrl, inspire_hand_state
+from robot_control.inspire_sdkpy.inspire_dds import inspire_hand_ctrl, inspire_hand_state
+
+
 
 from teleop.robot_control.hand_retargeting import HandRetargeting, HandType
 import numpy as np
 from enum import IntEnum
 import threading
 import time
-from multiprocessing import Process, shared_memory, Array, Lock
+from multiprocessing import Process, shared_memory, Array, Lock, Event
 
 inspire_tip_indices = [4, 9, 14, 19, 24]
 Inspire_Num_Motors = 6
-kTopicInspireCommand = "rt/inspire/cmd"
-kTopicInspireState = "rt/inspire/state"
+kTopicInspireLeftCommand = "rt/inspire_hand/ctrl/l"
+kTopicInspireRightCommand = "rt/inspire_hand/ctrl/r"
+kTopicInspireLeftState = "rt/inspire_hand/state/l"
+kTopicInspireRightState = "rt/inspire_hand/state/r"
 
-class Inspire_Controller:
+class G1_Inspire_Controller:
     def __init__(self, left_hand_array, right_hand_array, dual_hand_data_lock = None, dual_hand_state_array = None,
                        dual_hand_action_array = None, fps = 100.0, Unit_Test = False):
         print("Initialize Inspire_Controller...")
@@ -28,54 +34,80 @@ class Inspire_Controller:
             ChannelFactoryInitialize(0)
 
         # initialize handcmd publisher and handstate subscriber
-        self.HandCmb_publisher = ChannelPublisher(kTopicInspireCommand, MotorCmds_)
-        self.HandCmb_publisher.Init()
+        self.LeftHandCmb_publisher = ChannelPublisher(kTopicInspireLeftCommand, inspire_hand_ctrl)
+        self.LeftHandCmb_publisher.Init()
+        self.RightHandCmb_publisher = ChannelPublisher(kTopicInspireRightCommand, inspire_hand_ctrl)
+        self.RightHandCmb_publisher.Init()
 
-        self.HandState_subscriber = ChannelSubscriber(kTopicInspireState, MotorStates_)
-        self.HandState_subscriber.Init()
+        self.LeftHandState_subscriber = ChannelSubscriber(
+            kTopicInspireLeftState, inspire_hand_state
+        )
+        self.LeftHandState_subscriber.Init()
+        self.RightHandState_subscriber = ChannelSubscriber(
+            kTopicInspireRightState, inspire_hand_state
+        )
+        self.RightHandState_subscriber.Init()
 
         # Shared Arrays for hand states
-        self.left_hand_state_array  = Array('d', Inspire_Num_Motors, lock=True)  
-        self.right_hand_state_array = Array('d', Inspire_Num_Motors, lock=True)
+        self.left_hand_state_array = Array("d", Inspire_Num_Motors, lock=True)
+        self.right_hand_state_array = Array("d", Inspire_Num_Motors, lock=True)
 
         # initialize subscribe thread
+        self.stop_event = Event()
         self.subscribe_state_thread = threading.Thread(target=self._subscribe_hand_state)
         self.subscribe_state_thread.daemon = True
         self.subscribe_state_thread.start()
 
         while True:
-            if any(self.right_hand_state_array): # any(self.left_hand_state_array) and 
+            if any(self.right_hand_state_array) and any(self.right_hand_state_array):
                 break
             time.sleep(0.01)
             print("[Inspire_Controller] Waiting to subscribe dds...")
 
-        hand_control_process = Process(target=self.control_process, args=(left_hand_array, right_hand_array,  self.left_hand_state_array, self.right_hand_state_array,
-                                                                          dual_hand_data_lock, dual_hand_state_array, dual_hand_action_array))
-        hand_control_process.daemon = True
-        hand_control_process.start()
+        # hand_control_process = Process(target=self.control_process, args=(left_hand_array, right_hand_array,  self.left_hand_state_array, self.right_hand_state_array,
+        #                                                                   dual_hand_data_lock, dual_hand_state_array, dual_hand_action_array))
+        # hand_control_process.daemon = True
+        # hand_control_process.start()
 
         print("Initialize Inspire_Controller OK!\n")
 
+
     def _subscribe_hand_state(self):
-        while True:
-            hand_msg  = self.HandState_subscriber.Read()
-            if hand_msg is not None:
-                for idx, id in enumerate(Inspire_Left_Hand_JointIndex):
-                    self.right_hand_state_array[idx] = hand_msg.states[id].q
-                for idx, id in enumerate(Inspire_Right_Hand_JointIndex):
-                    self.left_hand_state_array[idx] = hand_msg.states[id].q
+        while not self.stop_event.is_set():
+            # Update left hand state
+            left_hand_msg = self.LeftHandState_subscriber.Read()
+            if left_hand_msg is not None:
+                for idx in range(6): # enumerate(Inspire_Left_Hand_JointIndex):
+                    self.left_hand_state_array[idx] = left_hand_msg.angle_act[idx]
+
+
+            # Update right hand state
+            right_hand_msg = self.RightHandState_subscriber.Read()
+            if right_hand_msg is not None:
+                for idx in range(6): # enumerate(Inspire_Right_Hand_JointIndex):
+                    self.right_hand_state_array[idx] = right_hand_msg.angle_act[idx]
+
             time.sleep(0.002)
 
     def ctrl_dual_hand(self, left_q_target, right_q_target):
         """
         Set current left, right hand motor state target q
         """
-        for idx, id in enumerate(Inspire_Left_Hand_JointIndex):             
-            self.hand_msg.cmds[id].q = left_q_target[idx]         
-        for idx, id in enumerate(Inspire_Right_Hand_JointIndex):             
-            self.hand_msg.cmds[id].q = right_q_target[idx] 
+        # Own
+        # left_msg = inspire_hand_ctrl()
+        # left_msg.angle_set = [int(v * 1000) for v in left_q_target]
+        # right_msg = inspire_hand_ctrl()
+        # right_msg.angle_set = [int(v * 1000) for v in right_q_target]
+        # self.LeftHandCmb_publisher.Write(left_msg)
+        # self.RightHandCmb_publisher.Write(right_msg)
 
-        self.HandCmb_publisher.Write(self.hand_msg)
+        # Original
+        # for idx, id in enumerate(Inspire_Left_Hand_JointIndex):             
+        #     self.hand_msg.cmds[id].q = left_q_target[idx]         
+        # for idx, id in enumerate(Inspire_Right_Hand_JointIndex):             
+        #     self.hand_msg.cmds[id].q = right_q_target[idx] 
+
+        # self.HandCmb_publisher.Write(self.hand_msg)
         # print("hand ctrl publish ok.")
     
     def control_process(self, left_hand_array, right_hand_array, left_hand_state_array, right_hand_state_array,
@@ -86,13 +118,13 @@ class Inspire_Controller:
         right_q_target = np.full(Inspire_Num_Motors, 1.0)
 
         # initialize inspire hand's cmd msg
-        self.hand_msg  = MotorCmds_()
-        self.hand_msg.cmds = [unitree_go_msg_dds__MotorCmd_() for _ in range(len(Inspire_Right_Hand_JointIndex) + len(Inspire_Left_Hand_JointIndex))]
+        # self.hand_msg  = MotorCmds_()
+        # self.hand_msg.cmds = [unitree_go_msg_dds__MotorCmd_() for _ in range(len(Inspire_Right_Hand_JointIndex) + len(Inspire_Left_Hand_JointIndex))]
 
-        for idx, id in enumerate(Inspire_Left_Hand_JointIndex):
-            self.hand_msg.cmds[id].q = 1.0
-        for idx, id in enumerate(Inspire_Right_Hand_JointIndex):
-            self.hand_msg.cmds[id].q = 1.0
+        # for idx, id in enumerate(Inspire_Left_Hand_JointIndex):
+        #     self.hand_msg.cmds[id].q = 1.0
+        # for idx, id in enumerate(Inspire_Right_Hand_JointIndex):
+        #     self.hand_msg.cmds[id].q = 1.0
 
         try:
             while self.running:

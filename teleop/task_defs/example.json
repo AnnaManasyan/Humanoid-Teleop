@@ -1,16 +1,28 @@
 {
     "tasks": [
       {
-        "title": "Walk towards the desk and use an air pump on the desk",
-        "category": "Locomotion",
+        "title": "Sponge into bowl",
+        "category": "Manipulation",
         "objects": "air pump, desk",
-        "description": "Walk to the desk, locate the air pump, and operate it by pressing or squeezing."
+        "description": "Sponge into bowl."
       },
       {
-        "title": "Walk towards the cabinet and close the cabinet door",
-        "category": "Locomotion",
-        "objects": "cabinet door, cabinet",
-        "description": "Walk to the cabinet and close the cabinet door by pushing it shut."
+        "title": "Sponge into bowl 2",
+        "category": "Manipulation",
+        "objects": "air pump, desk",
+        "description": "Sponge into bowl 2."
+      },
+      {
+        "title": "Sponge into bowl 3",
+        "category": "Manipulation",
+        "objects": "air pump, desk",
+        "description": "Sponge into bowl 3."
+      },
+      {
+        "title": "Sponge into bowl 4",
+        "category": "Manipulation",
+        "objects": "air pump, desk",
+        "description": "Sponge into bowl 4."
       }
     ]
   }

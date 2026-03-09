@@ -16,3 +16,4 @@ teleop/data*
 teleop/zipped
 .direnv
 unitree_sdk2_python/
+teleop/data/

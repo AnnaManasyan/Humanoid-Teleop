@@ -6,16 +6,16 @@ import queue
 import sys
 import threading
 import time
-from multiprocessing import Event, Process, Queue, shared_memory
-from typing import Any, Tuple
+from multiprocessing import Event, Lock, Manager, Process, Queue, shared_memory
+from typing import Any, Dict, Optional, Tuple
 
 import cv2
 import numpy as np
 import zmq
-from constants import Modality
-from utils.logger import logger
 from vr import VuerTeleop
 from writers import AsyncImageWriter, AsyncWriter
+
+from utils.logger import logger
 
 # from turbojpeg import TJPF_BGR, TurboJPEG
 
@@ -23,30 +23,18 @@ from writers import AsyncImageWriter, AsyncWriter
 FREQ = 30
 DELAY = 1 / FREQ
 
+from constants import *
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 
 class TeleoperatorProcess:
-    def __init__(
-        self,
-        teleop_shm_array,
-        img_shm_name,
-        kill_event,
-        ir_data_queue,
-        xr_device="avp",
-        input_mode="hand",
-        display_mode="immersive",
-    ):
-        from vr import Quest3Teleop
-
+    def __init__(self, teleop_shm_array, img_shm_name, kill_event, ir_data_queue):
         self.teleop_shm_array = teleop_shm_array
         self.kill_event = kill_event
         self.ir_data_queue = ir_data_queue
-        self.xr_device = xr_device
-        self.input_mode = input_mode
-        self.display_mode = display_mode
 
         # Connect to the shared memory for images created by the worker
         self.img_shm = shared_memory.SharedMemory(name=img_shm_name)
@@ -55,21 +43,8 @@ class TeleoperatorProcess:
             (height, width, 3), dtype=np.uint8, buffer=self.img_shm.buf
         )
 
-        # Initialize teleoperator based on XR device type
-        if xr_device == "quest3":
-            # Use Quest 3 teleoperator with TeleVuerWrapper
-            self.teleoperator = Quest3Teleop(
-                config_file_path="inspire_hand.yml",
-                img_shape=(height, width),
-                input_mode=input_mode,
-                display_mode=display_mode,
-                binocular=True,
-                zmq=True,
-                webrtc=False,
-            )
-        else:
-            # Use Apple Vision Pro teleoperator (default)
-            self.teleoperator = VuerTeleop("inspire_hand.yml", img_shm_name)
+        # Pass the shared memory name so that VuerTeleop attaches to the same memory
+        self.teleoperator = VuerTeleop("inspire_hand.yml", img_shm_name)
 
     def _ir_loop(self):
         """Thread that processes IR image data and copies it to shared memory."""
@@ -82,11 +57,7 @@ class TeleoperatorProcess:
                     resized_frame = cv2.resize(
                         decoded_frame, (1280, 720), interpolation=cv2.INTER_LINEAR
                     )
-                    # For Quest 3, use render_to_xr; for AVP, copy to shared memory
-                    if self.xr_device == "quest3":
-                        self.teleoperator.render_to_xr(resized_frame)
-                    else:
-                        np.copyto(self.img_array, resized_frame)
+                    np.copyto(self.img_array, resized_frame)
                 else:
                     logger.warning("Teleoperator: Failed to decode IR frame.")
             except queue.Empty:
@@ -105,10 +76,8 @@ class TeleoperatorProcess:
             self.teleop_shm_array[0:9] = head_rmat.flatten()
             self.teleop_shm_array[9:25] = left_pose.flatten()
             self.teleop_shm_array[25:41] = right_pose.flatten()
-            if left_qpos is not None:
-                self.teleop_shm_array[41:48] = np.array(left_qpos).flatten()
-            if right_qpos is not None:
-                self.teleop_shm_array[48:55] = np.array(right_qpos).flatten()
+            self.teleop_shm_array[41:48] = np.array(left_qpos).flatten()
+            self.teleop_shm_array[48:55] = np.array(right_qpos).flatten()
             time.sleep(0.01)
 
     def run(self):
@@ -135,25 +104,13 @@ class TeleoperatorProcess:
 
 
 class RobotDataWorker:
-    def __init__(
-        self,
-        shared_data,
-        robot_shm_array,
-        teleop_shm_array,
-        robot="h1",
-        xr_device="avp",
-        input_mode="hand",
-        display_mode="immersive",
-    ):
+    def __init__(self, shared_data, robot_shm_array, teleop_shm_array, robot="h1"):
         self.robot = robot
-        self.xr_device = xr_device
-        self.input_mode = input_mode
-        self.display_mode = display_mode
         self.modality = Modality(self.robot)
         self.shared_data = shared_data
         self.kill_event = shared_data["kill_event"]
         self.session_start_event = shared_data["session_start_event"]
-        self.end_event = shared_data["end_event"]  # TODO: redundant
+        self.end_event = shared_data["end_event"]  # TODO: redundent
         # self.h1_lock = Lock()
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
@@ -191,9 +148,6 @@ class RobotDataWorker:
                 self.img_shm.name,
                 self.teleop_kill_event,
                 self.ir_data_queue,
-                self.xr_device,
-                self.input_mode,
-                self.display_mode,
             ),
         )
         self.teleop_proc.start()
@@ -207,23 +161,10 @@ class RobotDataWorker:
         self.robot_data_writer = None
 
     def _run_teleoperator_process(
-        self,
-        teleop_shm_array,
-        img_shm_name,
-        kill_event,
-        ir_data_queue,
-        xr_device,
-        input_mode,
-        display_mode,
+        self, teleop_shm_array, img_shm_name, kill_event, ir_data_queue
     ):
         teleop_process = TeleoperatorProcess(
-            teleop_shm_array,
-            img_shm_name,
-            kill_event,
-            ir_data_queue,
-            xr_device=xr_device,
-            input_mode=input_mode,
-            display_mode=display_mode,
+            teleop_shm_array, img_shm_name, kill_event, ir_data_queue
         )
         teleop_process.run()
 
@@ -322,7 +263,7 @@ class RobotDataWorker:
         return robot_data[start_idx:end_idx]
 
     def get_robot_data(self, time_curr):
-        logger.debug("worker: starting to get robot data")
+        logger.debug(f"worker: starting to get robot data")
         # with self.h1_lock:
         robot_data = self.robot_shm_array.copy()
 
@@ -343,16 +284,26 @@ class RobotDataWorker:
             "rpy": self._get_modality_slice(robot_data, "imu_rpy").tolist(),
         }
 
-        odomstate = {
-            "position": self._get_modality_slice(
-                robot_data, "odom_position"
-            ).tolist(),
-            "velocity": self._get_modality_slice(
-                robot_data, "odom_velocity"
-            ).tolist(),
-            "rpy": self._get_modality_slice(robot_data, "odom_rpy").tolist(),
-            "quat": self._get_modality_slice(robot_data, "odom_quaternion").tolist(),
-        }
+        # odomstate = {
+        #     "position": self._get_modality_slice(
+        #         robot_data, "odom_position"
+        #     ).tolist(),
+        #     "velocity": self._get_modality_slice(
+        #         robot_data, "odom_velocity"
+        #     ).tolist(),
+        #     "rpy": self._get_modality_slice(robot_data, "odom_rpy").tolist(),
+        #     "quat": self._get_modality_slice(robot_data, "odom_quaternion").tolist(),
+        # }
+        if self.modality.has_modality("odom_position"):
+            odomstate = {
+                "position": self._get_modality_slice(robot_data, "odom_position").tolist(),
+                "velocity": self._get_modality_slice(robot_data, "odom_velocity").tolist(),
+                "rpy": self._get_modality_slice(robot_data, "odom_rpy").tolist(),
+                "quat": self._get_modality_slice(robot_data, "odom_quaternion").tolist(),
+            }
+        else:
+            odomstate = {"position": None, "velocity": None, "rpy": None, "quat": None}
+
 
         pressure_state = None
         if self.modality.has_modality("hand_press"):
@@ -394,7 +345,11 @@ class RobotDataWorker:
                 logger.info(
                     "Worker: waiting for new session start (session_start_event)."
                 )
-                self.session_start_event.wait()
+                while not self.session_start_event.is_set() and not self.end_event.is_set():
+                    rgb_array, ir_array, depth_array = self._recv_zmq_frame()
+                    self._send_image_to_teleoperator(ir_array)
+                if self.end_event.is_set():
+                    break
                 logger.info("Worker: starting new session.")
                 self.run_session()
                 self.async_image_writer.close()
@@ -434,7 +389,7 @@ class RobotDataWorker:
             logger.error(f"failed to save image {self.frame_idx}")
 
     def _write_robot_data(self, rgb_array, depth_array, reuse=False):
-        logger.debug("Worker: writing robot data")
+        logger.debug(f"Worker: writing robot data")
         self._write_image_data(rgb_array, depth_array)
 
         robot_data = self.get_robot_data(time.time())
