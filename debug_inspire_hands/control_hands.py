@@ -18,7 +18,7 @@ left_regs = [
     1000,  # ring
     1000,  # middle
     1000,  # index
-    850,  # thumb pinch
+    50,  # thumb pinch
     1000,  # thumb rotation
 ]
 # The actual range for the commands is 0-1000.
@@ -27,9 +27,8 @@ left_regs = [
 # Closing is not an issue.
 
 right_regs = [x for x in left_regs]
-right_regs[-2]=50
 
-# left_client.write_registers(1486, left_regs)
+left_client.write_registers(1486, left_regs)
 right_client.write_registers(1486, right_regs)
 
 left_client.close()

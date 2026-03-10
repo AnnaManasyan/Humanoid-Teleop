@@ -215,14 +215,25 @@ class InspireController:
     def __init__(self):
         self.left_client = ModbusTcpClient(self.LEFT_IP, port=self.PORT)
         self.right_client = ModbusTcpClient(self.RIGHT_IP, port=self.PORT)
-        self.left_client.connect()
-        self.right_client.connect()
-        # Disable Nagle's algorithm for lower latency
-        self.left_client.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        self.right_client.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        # Reset errors
-        self.left_client.write_register(1004, 1, 1)
-        self.right_client.write_register(1004, 1, 1)
+        self._connect_with_retry()
+
+    def _connect_client(self, client, name):
+        """Connect a single client with retry."""
+        import time as _time
+        for attempt in range(5):
+            if client.connect():
+                client.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                client.write_register(1004, 1, 1)
+                print(f"[InspireController] {name} connected")
+                return True
+            print(f"[InspireController] {name} connect attempt {attempt+1}/5 failed, retrying...")
+            _time.sleep(1)
+        print(f"[InspireController] WARNING: {name} failed to connect after 5 attempts")
+        return False
+
+    def _connect_with_retry(self):
+        self._connect_client(self.left_client, "LEFT")
+        self._connect_client(self.right_client, "RIGHT")
 
     def _send_hand_positions(self, client, positions):
         """Send Modbus write_registers without waiting for response (fire-and-forget)."""
@@ -264,7 +275,9 @@ class InspireController:
         self.right_client.close()
 
     def reset(self):
-        self.left_client.connect()
-        self.right_client.connect()
-        self.left_client.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        self.right_client.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self.left_client.close()
+        self.right_client.close()
+        self._connect_with_retry()
+        # Reset errors (same as __init__)
+        self.left_client.write_register(1004, 1, 1)
+        self.right_client.write_register(1004, 1, 1)

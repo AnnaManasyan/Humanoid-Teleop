@@ -221,6 +221,7 @@ class RobotTaskmaster:
         finally:
             self.arm_ctrl.gradually_set_weight_to_0()
             self.stop()
+            self.hand_ctrl.shutdown()
 
             if self.robot == "g1":
                 self.hand_shm.close()
@@ -412,7 +413,7 @@ class RobotTaskmaster:
 
         logger.debug("Master: shutting down controllers...")
         self.arm_ctrl.shutdown()
-        self.hand_ctrl.shutdown()
+        # Keep hand_ctrl alive — persistent TCP connection, no need to reconnect between episodes
         logger.debug("Master: controllers shutdown")
         logger.info("Master: Stopping all threads ended!")
 
@@ -423,7 +424,7 @@ class RobotTaskmaster:
         logger.info("Master: Clearing stop event...")
         # self.kill_event.clear()  # TODO: create a new one?
 
-        # self.hand_ctrl.reset()
+        # hand_ctrl stays connected — no shutdown/reset needed between episodes
         self.arm_ctrl.reset()
         self.first = True
         self.running = False
