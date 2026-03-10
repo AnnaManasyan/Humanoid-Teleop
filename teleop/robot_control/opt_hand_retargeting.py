@@ -9,6 +9,8 @@ import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import time
+
 import mujoco
 import numpy as np
 from scipy.optimize import minimize as scipy_minimize
@@ -129,6 +131,7 @@ def _urdf_to_mjcf_fragments(urdf_path, prefix):
             if q:
                 body_attrs += f" {q}"
             lines.append(f'{" " * indent}<body {body_attrs}>')
+            lines.append(f'{" " * (indent + 2)}<inertial mass="0.01" pos="0 0 0" diaginertia="1e-6 1e-6 1e-6"/>')
 
             if jtype == "revolute":
                 axis_el = joint.find("axis")
@@ -154,6 +157,7 @@ def _urdf_to_mjcf_fragments(urdf_path, prefix):
         if q:
             attrs += f" {q}"
         body_lines.append(f"      <body {attrs}>")
+        body_lines.append(f'        <inertial mass="0.01" pos="0 0 0" diaginertia="1e-6 1e-6 1e-6"/>')
         body_lines.extend(_build_body(child_name, 8))
         body_lines.append("      </body>")
 
@@ -242,6 +246,9 @@ class OptRetargeter:
             self.jnt_addr[i] = model.jnt_qposadr[jid]
             self.lo[i] = model.jnt_range[jid, 0]
             self.hi[i] = model.jnt_range[jid, 1]
+        # Override thumb_pitch (idx 1) effective range: URDF says 0.6 but
+        # real hardware maps 0-1000 to a larger physical range.
+        self.hi[1] = 0.4
         self.bounds = list(zip(self.lo, self.hi))
 
         # Mimic joints
@@ -407,13 +414,31 @@ class InspireOptRetargeting:
         # Order: [pinky, ring, middle, index, thumb_bend, thumb_rotation]
     """
 
+    # Max register value per motor in hardware order:
+    #   [pinky, ring, middle, index, thumb_bend, thumb_rotation]
+    # All motors accept 0-1000.  "open" = 1000,  "closed" = 0.
+    REG_MAX = np.array([1000, 1000, 1000, 1000, 1000, 1000], dtype=np.float64)
+
     def __init__(self):
         print("[OptRetargeting] Building FK model from Inspire hand URDFs...")
         xml = _build_fk_model()
         self.model = mujoco.MjModel.from_xml_string(xml)
         self.retarget_L = OptRetargeter(self.model, "L")
         self.retarget_R = OptRetargeter(self.model, "R")
+        self._bench_times = []
+        self._bench_interval = 100
         print("[OptRetargeting] Ready.")
+
+    def _to_hardware(self, norm):
+        """Convert optimizer-order normalized [0,1] to hardware register values.
+
+        Optimizer order: [thumb_yaw, thumb_pitch, index, middle, ring, pinky]
+        Hardware order:  [pinky, ring, middle, index, thumb_bend, thumb_rotation]
+
+        Returns register values (0 to REG_MAX per joint).
+        """
+        activation = np.clip(norm[::-1], 0.0, 1.0)  # reorder to hardware
+        return self.REG_MAX * (1.0 - activation)     # open=REG_MAX, closed=0
 
     def retarget(self, left_lm, right_lm, coord_rot=None):
         """Retarget from 25-joint hand landmarks.
@@ -425,23 +450,34 @@ class InspireOptRetargeting:
                        Default: R_Y2Z (for WebXR/Manus Y-up input).
 
         Returns:
-            (left_hw, right_hw): each (6,) in hardware format [0,1].
-            1 = fully open, 0 = fully closed.
+            (left_regs, right_regs): each (6,) register values (0 to REG_MAX),
+            or None if the corresponding hand has no valid data.
             Order: [pinky, ring, middle, index, thumb_bend, thumb_rotation]
         """
         if coord_rot is None:
             coord_rot = R_Y2Z
 
-        left_mj = (coord_rot @ left_lm.T).T
-        right_mj = (coord_rot @ right_lm.T).T
+        t0 = time.perf_counter()
 
-        q_L = self.retarget_L.retarget(left_mj)
-        q_R = self.retarget_R.retarget(right_mj)
+        left_regs = None
+        right_regs = None
 
-        # Normalize to [0,1] (0=open, 1=closed) then invert for hardware (1=open, 0=closed)
-        # Reorder from [thumb_yaw, thumb_pitch, index, middle, ring, pinky]
-        # to hardware: [pinky, ring, middle, index, thumb_bend, thumb_rotation]
-        left_hw = np.clip(1.0 - self.retarget_L.normalize(q_L)[::-1], 0.0, 1.0)
-        right_hw = np.clip(1.0 - self.retarget_R.normalize(q_R)[::-1], 0.0, 1.0)
+        if not np.allclose(left_lm, 0.0):
+            left_mj = (coord_rot @ left_lm.T).T
+            q_L = self.retarget_L.retarget(left_mj)
+            left_regs = self._to_hardware(self.retarget_L.normalize(q_L))
 
-        return left_hw, right_hw
+        if not np.allclose(right_lm, 0.0):
+            right_mj = (coord_rot @ right_lm.T).T
+            q_R = self.retarget_R.retarget(right_mj)
+            right_regs = self._to_hardware(self.retarget_R.normalize(q_R))
+
+        dt = time.perf_counter() - t0
+        self._bench_times.append(dt)
+        if len(self._bench_times) % self._bench_interval == 0:
+            arr = np.array(self._bench_times) * 1000
+            avg = arr.mean()
+            p2_5, p97_5 = np.percentile(arr, [2.5, 97.5])
+            print(f"[HandRetarget] avg {avg:.2f} ms ({1000/avg:.0f} Hz) | 95%: [{p2_5:.2f}, {p97_5:.2f}] ms | n={len(arr)}")
+
+        return left_regs, right_regs

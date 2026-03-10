@@ -68,16 +68,17 @@ class TeleoperatorProcess:
     def _step_loop(self):
         """Thread that repeatedly calls teleoperator.step() and updates shared state."""
         while not self.kill_event.is_set():
-            # logger.debug("Teleoperator: starting to step")
-            head_rmat, left_pose, right_pose, left_qpos, right_qpos = (
-                self.teleoperator.step()
-            )
-            # logger.debug("Teleoperator: finished stepping")
-            self.teleop_shm_array[0:9] = head_rmat.flatten()
-            self.teleop_shm_array[9:25] = left_pose.flatten()
-            self.teleop_shm_array[25:41] = right_pose.flatten()
-            self.teleop_shm_array[41:48] = np.array(left_qpos).flatten()
-            self.teleop_shm_array[48:55] = np.array(right_qpos).flatten()
+            try:
+                head_rmat, left_pose, right_pose, left_qpos, right_qpos = (
+                    self.teleoperator.step()
+                )
+                self.teleop_shm_array[0:9] = head_rmat.flatten()
+                self.teleop_shm_array[9:25] = left_pose.flatten()
+                self.teleop_shm_array[25:41] = right_pose.flatten()
+                self.teleop_shm_array[41:48] = np.array(left_qpos).flatten()
+                self.teleop_shm_array[48:55] = np.array(right_qpos).flatten()
+            except Exception as e:
+                logger.error(f"Teleoperator step error: {e}")
             time.sleep(0.01)
 
     def run(self):

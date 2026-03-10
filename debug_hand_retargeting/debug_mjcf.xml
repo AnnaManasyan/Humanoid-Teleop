@@ -7,24 +7,24 @@
   </visual>
 
   <asset>
-    <mesh name="R_hand_base_link" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_base_link.obj"/>
-    <mesh name="R_thumb_proximal_base" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_thumb_proximal_base.obj"/>
-    <mesh name="R_thumb_proximal" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_thumb_proximal.obj"/>
-    <mesh name="R_thumb_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_thumb_intermediate.obj"/>
-    <mesh name="R_thumb_distal" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_thumb_distal.obj"/>
-    <mesh name="R_index_proximal" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_index_proximal.obj"/>
-    <mesh name="R_index_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_index_intermediate.obj"/>
-    <mesh name="R_middle_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_middle_intermediate.obj"/>
-    <mesh name="R_pinky_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_pinky_intermediate.obj"/>
-    <mesh name="L_hand_base_link" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_base_link.obj"/>
-    <mesh name="L_thumb_proximal_base" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_thumb_proximal_base.obj"/>
-    <mesh name="L_thumb_proximal" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_thumb_proximal.obj"/>
-    <mesh name="L_thumb_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_thumb_intermediate.obj"/>
-    <mesh name="L_thumb_distal" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_thumb_distal.obj"/>
-    <mesh name="L_index_proximal" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_index_proximal.obj"/>
-    <mesh name="L_index_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_index_intermediate.obj"/>
-    <mesh name="L_middle_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_middle_intermediate.obj"/>
-    <mesh name="L_pinky_intermediate" file="/Users/jbeisswenger/Desktop/PhD/Humanoid_VLA/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_pinky_intermediate.obj"/>
+    <mesh name="R_hand_base_link" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_base_link.obj"/>
+    <mesh name="R_thumb_proximal_base" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_thumb_proximal_base.obj"/>
+    <mesh name="R_thumb_proximal" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_thumb_proximal.obj"/>
+    <mesh name="R_thumb_intermediate" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_thumb_intermediate.obj"/>
+    <mesh name="R_thumb_distal" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_thumb_distal.obj"/>
+    <mesh name="R_index_proximal" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_index_proximal.obj"/>
+    <mesh name="R_index_intermediate" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_index_intermediate.obj"/>
+    <mesh name="R_middle_intermediate" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_middle_intermediate.obj"/>
+    <mesh name="R_pinky_intermediate" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/right_pinky_intermediate.obj"/>
+    <mesh name="L_hand_base_link" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_base_link.obj"/>
+    <mesh name="L_thumb_proximal_base" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_thumb_proximal_base.obj"/>
+    <mesh name="L_thumb_proximal" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_thumb_proximal.obj"/>
+    <mesh name="L_thumb_intermediate" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_thumb_intermediate.obj"/>
+    <mesh name="L_thumb_distal" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_thumb_distal.obj"/>
+    <mesh name="L_index_proximal" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_index_proximal.obj"/>
+    <mesh name="L_index_intermediate" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_index_intermediate.obj"/>
+    <mesh name="L_middle_intermediate" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_middle_intermediate.obj"/>
+    <mesh name="L_pinky_intermediate" file="/home/g1/Desktop/G1/Humanoid-Teleop/debug_hand_retargeting/dex-retargeting/assets/robots/hands/inspire_hand/meshes/visual_obj/left_pinky_intermediate.obj"/>
   </asset>
 
   <worldbody>

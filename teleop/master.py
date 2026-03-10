@@ -188,20 +188,18 @@ class RobotTaskmaster:
 
     def setHandMotors(self, right_qpos, left_qpos):
         if right_qpos is not None and left_qpos is not None:
-            # Values are already in hardware format [0,1] (1=open, 0=closed)
-            # from opt_hand_retargeting. Order: [pinky, ring, middle, index, thumb_bend, thumb_rotation]
-            # First 6 values are the motor targets, 7th is unused padding.
-            left_hand_angles = list(left_qpos[:6])
-            right_hand_angles = list(right_qpos[:6])
-            self.hand_ctrl.ctrl(left_hand_angles, right_hand_angles)
+            # Values are register values (0-1000) from opt_hand_retargeting.
+            # Order: [pinky, ring, middle, index, thumb_bend, thumb_rotation, padding]
+            self.hand_ctrl.ctrl(list(left_qpos[:6]), list(right_qpos[:6]))
         return left_qpos, right_qpos
 
     def start(self):
         # logger.debug(f"Master: Process ID (PID) {os.getpid()}")
         try:
             while not self.end_event.is_set():
-                logger.info("Master: waiting to start")
-                self.session_start_event.wait()
+                self.session_start_event.wait(timeout=0.1)
+                if not self.session_start_event.is_set():
+                    continue
                 if self.end_event.is_set():
                     break
                 logger.info(
@@ -411,10 +409,10 @@ class RobotTaskmaster:
                 )
                 self.merge_proc.terminate()
 
-        logger.debug("Master: shutting down h1 contorllers...")
+        logger.debug("Master: shutting down controllers...")
         self.arm_ctrl.shutdown()
-        # self.hand_ctrl.shutdown()
-        logger.debug("Master: h1 controlleers shutdown")
+        self.hand_ctrl.shutdown()
+        logger.debug("Master: controllers shutdown")
         logger.info("Master: Stopping all threads ended!")
 
     def reset(self):

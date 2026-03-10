@@ -219,12 +219,11 @@ class InspireController:
         self.left_client.write_register(1004, 1, 1)
         self.right_client.write_register(1004, 1, 1)
 
-    def ctrl(self, left_angles, right_angles):
-        # left_angles / right_angles: 6 values in physical ranges:
-        #   [0-3]: fingers 0-1.7 rad, [4]: thumb-bend 0-1.2 rad, [5]: thumb-rot 0-0.5 rad
-        max_vals = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-        left_regs  = [int(max(0, min(1000, left_angles[i]  / max_vals[i] * 1000))) for i in range(6)]
-        right_regs = [int(max(0, min(1000, right_angles[i] / max_vals[i] * 1000))) for i in range(6)]
+    def ctrl(self, left_regs, right_regs):
+        """Write register values (0-1000) directly to both hands."""
+        left_regs  = [int(np.clip(v, 0, 1000)) for v in left_regs[:6]]
+        right_regs = [int(np.clip(v, 0, 1000)) for v in right_regs[:6]]
+        right_regs[4] = int(np.clip(right_regs[4], 0, 800)) # humb pinch max 850 to avoid cracking. Due to miscalibration, which we can not solve ourselves we need to clip this. This only applies to the right hand
         self.left_client.write_registers(1486, left_regs, 1)
         self.right_client.write_registers(1486, right_regs, 1)
 
@@ -236,6 +235,9 @@ class InspireController:
         return left_q + right_q
 
     def shutdown(self):
+        # Set hands to safe open pose before closing
+        safe_regs = [1000, 1000, 1000, 1000, 850, 1000]
+        self.ctrl(safe_regs, safe_regs)
         self.left_client.close()
         self.right_client.close()
 

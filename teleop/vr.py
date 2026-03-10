@@ -241,7 +241,9 @@ class VuerPreprocessor:
             fast_mat_inv(head_mat) @ right_wrist_mat @ hand2inspire_r_arm
         )  # wTr = wTh @ hTr
 
-        left_q_target, right_q_target = None, None
+        # Default: fully open hand (register values, 7th is unused padding)
+        left_q_target = np.append(InspireOptRetargeting.REG_MAX, 0.0)
+        right_q_target = np.append(InspireOptRetargeting.REG_MAX, 0.0)
 
         if self.manus_receiver is not None:
             manus_left, manus_right = self.manus_receiver.get_latest()
@@ -249,33 +251,24 @@ class VuerPreprocessor:
             manus_left, manus_right = None, None
 
         if manus_left is not None and manus_right is not None:
-            # Manus gloves: use optimization-based retargeting with all 25 joints
-            left_hw, right_hw = self.inspire_retargeting.retarget(
+            left_regs, right_regs = self.inspire_retargeting.retarget(
                 manus_left.copy(), manus_right.copy()
             )
-            # Pad to 7 values for shared memory compatibility (7th unused)
-            left_q_target = np.append(left_hw, 0.0)
-            right_q_target = np.append(right_hw, 0.0)
-
-            return (
-                head_mat,
-                rel_left_wrist_mat,
-                rel_right_wrist_mat,
-                left_q_target,
-                right_q_target,
-            )
-            
+            if left_regs is not None:
+                left_q_target = np.append(left_regs, 0.0)
+            if right_regs is not None:
+                right_q_target = np.append(right_regs, 0.0)
         else:
-            # Vision Pro / Quest: use optimization-based retargeting with raw landmarks
-            left_landmarks = tv.left_landmarks.copy()   # (25, 3) in WebXR Y-up
+            left_landmarks = tv.left_landmarks.copy()
             right_landmarks = tv.right_landmarks.copy()
 
-            if not np.all(left_landmarks == 0.0):
-                left_hw, right_hw = self.inspire_retargeting.retarget(
-                    left_landmarks, right_landmarks
-                )
-                left_q_target = np.append(left_hw, 0.0)
-                right_q_target = np.append(right_hw, 0.0)
+            left_regs, right_regs = self.inspire_retargeting.retarget(
+                left_landmarks, right_landmarks
+            )
+            if left_regs is not None:
+                left_q_target = np.append(left_regs, 0.0)
+            if right_regs is not None:
+                right_q_target = np.append(right_regs, 0.0)
 
         return (
             head_mat,

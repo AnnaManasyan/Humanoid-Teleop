@@ -678,30 +678,34 @@ def _vuer_process(cert_file, key_file, left_lm, right_lm, head_mat):
     async def on_hand(event, session, fps=60):
         try:
             v = event.value
-            left = v.get("left")
-            right = v.get("right")
+            ll = v.get("leftLandmarks")
+            rl = v.get("rightLandmarks")
 
             _counter[0] += 1
 
-            if not _got_data[0] and isinstance(left, list) and len(left) == 400:
+            if not _got_data[0] and isinstance(ll, list) and len(ll) == 25:
                 _got_data[0] = True
-                print(
-                    f"[HAND_MOVE #{_counter[0]}] Got hand data! "
-                    f"left={len(left)} floats, right="
-                    f"{len(right) if isinstance(right, list) else '?'} floats"
-                )
+                print(f"[HAND_MOVE #{_counter[0]}] Tracking active!")
+
+            if isinstance(ll, list) and len(ll) == 25 and isinstance(ll[0], (list, tuple)):
+                left_lm[:] = np.array(ll, dtype=np.float64).flatten()
+
+            if isinstance(rl, list) and len(rl) == 25 and isinstance(rl[0], (list, tuple)):
+                right_lm[:] = np.array(rl, dtype=np.float64).flatten()
 
             if _counter[0] % 300 == 0:
-                has = isinstance(left, list) and len(left) == 400
+                has = isinstance(ll, list) and len(ll) == 25
                 print(f"  ... {_counter[0]} events, tracking={'YES' if has else 'NO'}")
 
-            if isinstance(left, list) and len(left) == 400:
-                pos = np.array(left, dtype=np.float64).reshape(25, 16)[:, 12:15]
-                left_lm[:] = pos.flatten()
+            if isinstance(ll, list) and len(ll) == 25 and isinstance(ll[0], (list, tuple)):
+                flat = np.array(ll, dtype=np.float64).flatten()
+                if len(flat) == 75:
+                    left_lm[:] = flat
 
-            if isinstance(right, list) and len(right) == 400:
-                pos = np.array(right, dtype=np.float64).reshape(25, 16)[:, 12:15]
-                right_lm[:] = pos.flatten()
+            if isinstance(rl, list) and len(rl) == 25 and isinstance(rl[0], (list, tuple)):
+                flat = np.array(rl, dtype=np.float64).flatten()
+                if len(flat) == 75:
+                    right_lm[:] = flat
 
         except Exception as e:
             print(f"[HAND_MOVE] error: {e}")
