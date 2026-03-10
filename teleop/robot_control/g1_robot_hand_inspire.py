@@ -202,6 +202,8 @@ inspire_tip_indices = [4, 9, 14, 19, 24]
 #         self.subscribe_state_thread.start()
 #         print("H1HandController has been reset.")
 
+import socket
+import struct
 from pymodbus.client import ModbusTcpClient
 
 class InspireController:
@@ -215,17 +217,37 @@ class InspireController:
         self.right_client = ModbusTcpClient(self.RIGHT_IP, port=self.PORT)
         self.left_client.connect()
         self.right_client.connect()
+        # Disable Nagle's algorithm for lower latency
+        self.left_client.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self.right_client.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         # Reset errors
         self.left_client.write_register(1004, 1, 1)
         self.right_client.write_register(1004, 1, 1)
+
+    def _send_hand_positions(self, client, positions):
+        """Send Modbus write_registers without waiting for response (fire-and-forget)."""
+        sock = client.socket
+        if sock is None:
+            return
+        register = 1486
+        count = len(positions)
+        pdu = struct.pack(">BHH B", 0x10, register, count, count * 2)
+        for v in positions:
+            pdu += struct.pack(">H", int(v))
+        # MBAP header: transaction_id, protocol_id, length, unit_id
+        mbap = struct.pack(">HHH B", 0, 0, len(pdu) + 1, 1)
+        try:
+            sock.sendall(mbap + pdu)
+        except (BlockingIOError, OSError):
+            pass  # Skip this frame
 
     def ctrl(self, left_regs, right_regs):
         """Write register values (0-1000) directly to both hands."""
         left_regs  = [int(np.clip(v, 0, 1000)) for v in left_regs[:6]]
         right_regs = [int(np.clip(v, 0, 1000)) for v in right_regs[:6]]
-        right_regs[4] = int(np.clip(right_regs[4], 0, 800)) # humb pinch max 850 to avoid cracking. Due to miscalibration, which we can not solve ourselves we need to clip this. This only applies to the right hand
-        self.left_client.write_registers(1486, left_regs, 1)
-        self.right_client.write_registers(1486, right_regs, 1)
+        right_regs[4] = int(np.clip(right_regs[4], 0, 800)) # thumb pinch max 800 to avoid cracking
+        self._send_hand_positions(self.left_client, left_regs)
+        self._send_hand_positions(self.right_client, right_regs)
 
     def get_current_dual_hand_q(self):
         l = self.left_client.read_holding_registers(1546, 6, 1)
@@ -244,3 +266,5 @@ class InspireController:
     def reset(self):
         self.left_client.connect()
         self.right_client.connect()
+        self.left_client.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self.right_client.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)

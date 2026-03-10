@@ -360,6 +360,7 @@ class RobotDataWorker:
             self.context.term()
 
             self.teleop_kill_event.set()
+            self.ir_data_queue.cancel_join_thread()
             self.teleop_proc.join()
             logger.info("Worker: teleoperator process joined.")
             self.img_shm.close()
@@ -405,7 +406,10 @@ class RobotDataWorker:
         self.frame_idx += 1
 
     def _send_image_to_teleoperator(self, ir_array):
-        self.ir_data_queue.put(ir_array)
+        try:
+            self.ir_data_queue.put_nowait(ir_array)
+        except Exception:
+            pass
 
     def _session_init(self):
         if "dirname" not in self.shared_data:

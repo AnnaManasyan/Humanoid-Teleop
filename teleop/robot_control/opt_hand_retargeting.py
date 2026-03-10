@@ -9,8 +9,6 @@ import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-import time
-
 import mujoco
 import numpy as np
 from scipy.optimize import minimize as scipy_minimize
@@ -425,8 +423,6 @@ class InspireOptRetargeting:
         self.model = mujoco.MjModel.from_xml_string(xml)
         self.retarget_L = OptRetargeter(self.model, "L")
         self.retarget_R = OptRetargeter(self.model, "R")
-        self._bench_times = []
-        self._bench_interval = 100
         print("[OptRetargeting] Ready.")
 
     def _to_hardware(self, norm):
@@ -457,8 +453,6 @@ class InspireOptRetargeting:
         if coord_rot is None:
             coord_rot = R_Y2Z
 
-        t0 = time.perf_counter()
-
         left_regs = None
         right_regs = None
 
@@ -471,13 +465,5 @@ class InspireOptRetargeting:
             right_mj = (coord_rot @ right_lm.T).T
             q_R = self.retarget_R.retarget(right_mj)
             right_regs = self._to_hardware(self.retarget_R.normalize(q_R))
-
-        dt = time.perf_counter() - t0
-        self._bench_times.append(dt)
-        if len(self._bench_times) % self._bench_interval == 0:
-            arr = np.array(self._bench_times) * 1000
-            avg = arr.mean()
-            p2_5, p97_5 = np.percentile(arr, [2.5, 97.5])
-            print(f"[HandRetarget] avg {avg:.2f} ms ({1000/avg:.0f} Hz) | 95%: [{p2_5:.2f}, {p97_5:.2f}] ms | n={len(arr)}")
 
         return left_regs, right_regs

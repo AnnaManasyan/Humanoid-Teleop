@@ -15,6 +15,7 @@ from robot_control.robot_hand_unitree import Dex3_1_Controller
 from utils.logger import logger
 from writers import IKDataWriter
 
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)

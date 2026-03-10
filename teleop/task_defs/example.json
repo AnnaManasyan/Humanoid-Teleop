@@ -1,28 +1,28 @@
 {
     "tasks": [
       {
-        "title": "Sponge into bowl",
+        "title": "Put cube onto bowl",
         "category": "Manipulation",
-        "objects": "air pump, desk",
-        "description": "Sponge into bowl."
+        "objects": "bowl, cube",
+        "description": "Put cube onto bowl."
       },
       {
-        "title": "Sponge into bowl 2",
+        "title": "Put cube onto bowl",
         "category": "Manipulation",
-        "objects": "air pump, desk",
-        "description": "Sponge into bowl 2."
+        "objects": "bowl, cube",
+        "description": "Put cube onto bowl."
       },
       {
-        "title": "Sponge into bowl 3",
+        "title": "Put cube onto bowl",
         "category": "Manipulation",
-        "objects": "air pump, desk",
-        "description": "Sponge into bowl 3."
+        "objects": "bowl, cube",
+        "description": "Put cube onto bowl."
       },
       {
-        "title": "Sponge into bowl 4",
+        "title": "Put cube onto bowl",
         "category": "Manipulation",
-        "objects": "air pump, desk",
-        "description": "Sponge into bowl 4."
+        "objects": "bowl, cube",
+        "description": "Put cube onto bowl."
       }
     ]
   }
