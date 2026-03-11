@@ -231,9 +231,10 @@ class RobotTaskmaster:
     def get_robot_data(self):
         motorstate = self.arm_ctrl.get_current_motor_q()
         logger.debug(f"motorstate f{motorstate}")
-        
-        """handstate = self.hand_ctrl.get_current_dual_hand_q()
-        """
+
+        if self.robot == "g1_inspire":
+            handstate = np.array(self.hand_ctrl.get_current_dual_hand_q())
+
         if self.robot == "g1":
             hand_press_state = self.hand_ctrl.get_current_dual_hand_pressure()
             robot_sizes = G1_sizes
@@ -266,7 +267,8 @@ class RobotTaskmaster:
         odom_quat_end = odom_quat_start + robot_sizes.ODOM_QUATERNION_SIZE
 
         self.robot_shm_array[motor_start:hand_start] = motorstate[0:motor_state_size]
-        # self.robot_shm_array[hand_start:quat_start] = handstate
+        if self.robot == "g1_inspire":
+            self.robot_shm_array[hand_start:quat_start] = handstate
         self.robot_shm_array[quat_start:accel_start] = imustate.quaternion
         self.robot_shm_array[accel_start:gyro_start] = imustate.accelerometer
         self.robot_shm_array[gyro_start:rpy_start] = imustate.gyroscope

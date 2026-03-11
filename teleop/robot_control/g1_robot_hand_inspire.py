@@ -202,82 +202,113 @@ inspire_tip_indices = [4, 9, 14, 19, 24]
 #         self.subscribe_state_thread.start()
 #         print("H1HandController has been reset.")
 
+import queue
 import socket
-import struct
+import threading
 from pymodbus.client import ModbusTcpClient
 
 class InspireController:
-    # .210 = LEFT (or RIGHT — confirm first)
     LEFT_IP = "192.168.123.210"
     RIGHT_IP = "192.168.123.211"
     PORT = 6000
+    WRITE_REGISTER = 1486
+    READ_REGISTER  = 1546
 
     def __init__(self):
-        self.left_client = ModbusTcpClient(self.LEFT_IP, port=self.PORT)
-        self.right_client = ModbusTcpClient(self.RIGHT_IP, port=self.PORT)
-        self._connect_with_retry()
+        # Write clients — owned exclusively by the background write threads
+        self.left_write_client  = ModbusTcpClient(self.LEFT_IP,  port=self.PORT)
+        self.right_write_client = ModbusTcpClient(self.RIGHT_IP, port=self.PORT)
+        # Read clients — owned exclusively by get_current_dual_hand_q (main thread)
+        self.left_read_client   = ModbusTcpClient(self.LEFT_IP,  port=self.PORT)
+        self.right_read_client  = ModbusTcpClient(self.RIGHT_IP, port=self.PORT)
+
+        self._connect_all()
+        self._stop_event  = threading.Event()
+        # maxsize=1: worker always sends the latest command, stale ones are dropped
+        self._left_queue  = queue.Queue(maxsize=1)
+        self._right_queue = queue.Queue(maxsize=1)
+        self._left_thread  = threading.Thread(target=self._write_worker, args=(self._left_queue,  self.left_write_client,  "LEFT"),  daemon=True)
+        self._right_thread = threading.Thread(target=self._write_worker, args=(self._right_queue, self.right_write_client, "RIGHT"), daemon=True)
+        self._left_thread.start()
+        self._right_thread.start()
 
     def _connect_client(self, client, name):
-        """Connect a single client with retry."""
-        import time as _time
-        for attempt in range(5):
-            if client.connect():
-                client.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                client.write_register(1004, 1, 1)
-                print(f"[InspireController] {name} connected")
-                return True
-            print(f"[InspireController] {name} connect attempt {attempt+1}/5 failed, retrying...")
-            _time.sleep(1)
-        print(f"[InspireController] WARNING: {name} failed to connect after 5 attempts")
+        if client.connect():
+            client.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            print(f"[InspireController] {name} connected")
+            return True
+        print(f"[InspireController] WARNING: {name} failed to connect")
         return False
 
-    def _connect_with_retry(self):
-        self._connect_client(self.left_client, "LEFT")
-        self._connect_client(self.right_client, "RIGHT")
+    def _connect_all(self):
+        if self._connect_client(self.left_write_client,  "LEFT-write"):
+            self.left_write_client.write_register(1004, 1, 1)
+        if self._connect_client(self.right_write_client, "RIGHT-write"):
+            self.right_write_client.write_register(1004, 1, 1)
+        self._connect_client(self.left_read_client,  "LEFT-read")
+        self._connect_client(self.right_read_client, "RIGHT-read")
 
-    def _send_hand_positions(self, client, positions):
-        """Send Modbus write_registers without waiting for response (fire-and-forget)."""
-        sock = client.socket
-        if sock is None:
-            return
-        register = 1486
-        count = len(positions)
-        pdu = struct.pack(">BHH B", 0x10, register, count, count * 2)
-        for v in positions:
-            pdu += struct.pack(">H", int(v))
-        # MBAP header: transaction_id, protocol_id, length, unit_id
-        mbap = struct.pack(">HHH B", 0, 0, len(pdu) + 1, 1)
-        try:
-            sock.sendall(mbap + pdu)
-        except (BlockingIOError, OSError):
-            pass  # Skip this frame
+    def _write_worker(self, q, client, name):
+        """Background thread: send commands via pymodbus, ACK handled transparently."""
+        while not self._stop_event.is_set():
+            try:
+                regs = q.get(timeout=0.1)
+            except queue.Empty:
+                continue
+            try:
+                client.write_registers(self.WRITE_REGISTER, regs, 1)
+            except Exception as e:
+                print(f"[InspireController] {name} write error: {e}")
 
     def ctrl(self, left_regs, right_regs):
-        """Write register values (0-1000) directly to both hands."""
+        """Queue register values (0-1000) for both hands. Non-blocking; drops stale commands."""
         left_regs  = [int(np.clip(v, 0, 1000)) for v in left_regs[:6]]
         right_regs = [int(np.clip(v, 0, 1000)) for v in right_regs[:6]]
-        right_regs[4] = int(np.clip(right_regs[4], 0, 800)) # thumb pinch max 800 to avoid cracking
-        self._send_hand_positions(self.left_client, left_regs)
-        self._send_hand_positions(self.right_client, right_regs)
+        right_regs[4] = int(np.clip(right_regs[4], 0, 800))  # thumb pinch max 800
+        for q, regs in ((self._left_queue, left_regs), (self._right_queue, right_regs)):
+            try:
+                q.put_nowait(regs)
+            except queue.Full:
+                q.get_nowait()  # drop stale command
+                q.put_nowait(regs)
 
     def get_current_dual_hand_q(self):
-        l = self.left_client.read_holding_registers(1546, 6, 1)
-        r = self.right_client.read_holding_registers(1546, 6, 1)
-        left_q  = [v / 1000.0 for v in l.registers] if not l.isError() else [0]*6
-        right_q = [v / 1000.0 for v in r.registers] if not r.isError() else [0]*6
+        """Read actual finger positions. Uses dedicated read clients (no ACK interference)."""
+        try:
+            l = self.left_read_client.read_holding_registers(self.READ_REGISTER, 6, 1)
+            left_q = [v / 1000.0 for v in l.registers] if not l.isError() else [0] * 6
+        except Exception:
+            left_q = [0] * 6
+        try:
+            r = self.right_read_client.read_holding_registers(self.READ_REGISTER, 6, 1)
+            right_q = [v / 1000.0 for v in r.registers] if not r.isError() else [0] * 6
+        except Exception:
+            right_q = [0] * 6
         return left_q + right_q
 
     def shutdown(self):
-        # Set hands to safe open pose before closing
         safe_regs = [1000, 1000, 1000, 1000, 850, 1000]
         self.ctrl(safe_regs, safe_regs)
-        self.left_client.close()
-        self.right_client.close()
+        time.sleep(0.2)  # let write threads flush
+        self._stop_event.set()
+        self._left_thread.join(timeout=1)
+        self._right_thread.join(timeout=1)
+        for c in (self.left_write_client, self.right_write_client,
+                  self.left_read_client,  self.right_read_client):
+            c.close()
 
     def reset(self):
-        self.left_client.close()
-        self.right_client.close()
-        self._connect_with_retry()
-        # Reset errors (same as __init__)
-        self.left_client.write_register(1004, 1, 1)
-        self.right_client.write_register(1004, 1, 1)
+        self._stop_event.set()
+        self._left_thread.join(timeout=1)
+        self._right_thread.join(timeout=1)
+        for c in (self.left_write_client, self.right_write_client,
+                  self.left_read_client,  self.right_read_client):
+            c.close()
+        self._stop_event.clear()
+        self._connect_all()
+        self._left_queue  = queue.Queue(maxsize=1)
+        self._right_queue = queue.Queue(maxsize=1)
+        self._left_thread  = threading.Thread(target=self._write_worker, args=(self._left_queue,  self.left_write_client,  "LEFT"),  daemon=True)
+        self._right_thread = threading.Thread(target=self._write_worker, args=(self._right_queue, self.right_write_client, "RIGHT"), daemon=True)
+        self._left_thread.start()
+        self._right_thread.start()
