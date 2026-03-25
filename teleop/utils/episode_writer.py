@@ -1,4 +1,6 @@
 import os
+import shutil
+import zipfile
 import cv2
 import json
 import datetime
@@ -9,7 +11,7 @@ from queue import Queue, Empty
 from threading import Thread
 
 class EpisodeWriter():
-    def __init__(self, task_dir, frequency=30, image_size=[640, 480], rerun_log = True):
+    def __init__(self, task_dir, frequency=30, image_size=[640, 480], rerun_log = True, zip_imgs: bool = True, create_video: bool = True):
         """
         image_size: [width, height]
         """
@@ -17,6 +19,9 @@ class EpisodeWriter():
         self.task_dir = task_dir
         self.frequency = frequency
         self.image_size = image_size
+        self.zip_imgs = zip_imgs
+        self.create_video = create_video
+
 
         self.rerun_log = rerun_log
         if self.rerun_log:
@@ -152,11 +157,36 @@ class EpisodeWriter():
 
         # Save images
         if colors:
+            
             for idx_color, (color_key, color) in enumerate(colors.items()):
                 color_name = f'{str(idx).zfill(6)}_{color_key}.jpg'
                 if not cv2.imwrite(os.path.join(self.color_dir, color_name), color):
                     print(f"Failed to save color image.")
                 item_data['colors'][color_key] = os.path.join('colors', color_name)
+            
+            if self.create_video:
+                video_name = f'{str(idx).zfill(6)}.mp4'
+                video_path = os.path.join(self.episode_dir, video_name)
+                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                h, w = color.shape[:2]
+                writer = cv2.VideoWriter(video_path, fourcc, self.frequency, (w, h))
+                for i in range(idx + 1):
+                    frame_path = os.path.join(self.color_dir, f'{str(i).zfill(6)}_{color_key}.jpg')
+                    if os.path.exists(frame_path):
+                        frame = cv2.imread(frame_path)
+                        if frame is not None:
+                            writer.write(frame)
+                writer.release()
+                print(f"created video: {video_path}")
+            
+            if self.zip_imgs:
+                # zip colors
+                color_zip_path = os.path.join(self.episode_dir, 'color.zip')
+                with zipfile.ZipFile(color_zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                    for color_file in os.listdir(self.color_dir):
+                        zipf.write(os.path.join(self.color_dir, color_file), arcname=os.path.join('color', color_file))
+                # remove color dir after zipping
+                shutil.rmtree(self.color_dir)
 
         # Save depths
         if depths:
@@ -165,6 +195,15 @@ class EpisodeWriter():
                 if not cv2.imwrite(os.path.join(self.depth_dir, depth_name), depth):
                     print(f"Failed to save depth image.")
                 item_data['depths'][depth_key] = os.path.join('depths', depth_name)
+            
+            if self.zip_imgs:
+                # zip depths
+                depth_zip_path = os.path.join(self.episode_dir, 'depth.zip')
+                with zipfile.ZipFile(depth_zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                    for depth_file in os.listdir(self.depth_dir):
+                        zipf.write(os.path.join(self.depth_dir, depth_file), arcname=os.path.join('depth', depth_file))
+                # remove depth dir after zipping
+                shutil.rmtree(self.depth_dir)
 
         # Save audios
         if audios:
