@@ -1,28 +1,46 @@
 {
     "tasks": [
       {
-        "title": "Put cube onto bowl",
+        "title": "Put blue cube onto bowl",
         "category": "Manipulation",
         "objects": "bowl, cube",
-        "description": "Put cube onto bowl."
+        "description": "Put blue cube onto bowl."
       },
       {
-        "title": "Put cube onto bowl 2",
+        "title": "Put blue cube onto bowl 2",
         "category": "Manipulation",
         "objects": "bowl, cube",
-        "description": "Put cube onto bowl 2."
+        "description": "Put blue cube onto bowl 2."
       },
       {
-        "title": "Put cube onto bowl 3",
+        "title": "Put blue cube onto bowl 3",
         "category": "Manipulation",
         "objects": "bowl, cube",
-        "description": "Put cube onto bowl 3."
+        "description": "Put blue cube onto bowl 3."
       },
       {
-        "title": "Put cube onto bowl 4",
+        "title": "Put blue cube onto bowl 4",
         "category": "Manipulation",
         "objects": "bowl, cube",
-        "description": "Put cube onto bowl 4."
+        "description": "Put blue cube onto bowl 4."
+      },
+      {
+        "title": "Put blue cube onto bowl 5",
+        "category": "Manipulation",
+        "objects": "bowl, cube",
+        "description": "Put blue cube onto bowl 5."
+      },
+      {
+        "title": "Put blue cube onto bowl 6",
+        "category": "Manipulation",
+        "objects": "bowl, cube",
+        "description": "Put blue cube onto bowl 6."
+      },
+      {
+        "title": "Put blue cube onto bowl 7",
+        "category": "Manipulation",
+        "objects": "bowl, cube",
+        "description": "Put blue cube onto bowl 7."
       }
     ]
   }

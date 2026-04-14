@@ -276,12 +276,12 @@ class InspireController:
         """Read actual finger positions. Uses dedicated read clients (no ACK interference)."""
         try:
             l = self.left_read_client.read_holding_registers(self.READ_REGISTER, 6, 1)
-            left_q = [v / 1000.0 for v in l.registers] if not l.isError() else [0] * 6
+            left_q = list(l.registers) if not l.isError() else [0] * 6
         except Exception:
             left_q = [0] * 6
         try:
             r = self.right_read_client.read_holding_registers(self.READ_REGISTER, 6, 1)
-            right_q = [v / 1000.0 for v in r.registers] if not r.isError() else [0] * 6
+            right_q = list(r.registers) if not r.isError() else [0] * 6
         except Exception:
             right_q = [0] * 6
         return left_q + right_q

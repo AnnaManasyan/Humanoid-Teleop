@@ -18,7 +18,7 @@ Refer to the labels printed on the controller for the corresponding buttons.
 ssh unitree@192.168.1.58       # Password: 123
 # Select 2 (noetic) when prompted
 cd Humanoid-Teleop
-bash start_teleop_server.sh    # Enter password: 123
+bash start_image_server.sh    # Enter password: 123
 ```
 
 ## 3. Host Computer
