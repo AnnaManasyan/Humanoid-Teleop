@@ -3,9 +3,11 @@ import lzma
 import os
 import pickle
 import queue
+import shutil
 import sys
 import threading
 import time
+import zipfile
 from multiprocessing import Event, Lock, Manager, Process, Queue, shared_memory
 from typing import Any, Dict, Optional, Tuple
 
@@ -484,7 +486,54 @@ class RobotDataWorker:
                 self.async_image_writer.close()
                 logger.info("Worker: async image writer closed.")
 
+            # Zip images and create video in background so next session can start immediately
+            dirname = self.shared_data.get("dirname")
+            if dirname:
+                threading.Thread(
+                    target=self._post_process_episode, args=(dirname,), daemon=True
+                ).start()
+
             logger.info("Worker process has exited.")
+
+    def _post_process_episode(self, dirname):
+        """Zip color/depth dirs and create video from color frames. Runs in background thread."""
+        color_dir = os.path.join(dirname, "color")
+        depth_dir = os.path.join(dirname, "depth")
+
+        # Create video from color frames
+        if os.path.isdir(color_dir):
+            frames = sorted(f for f in os.listdir(color_dir) if f.endswith(".jpg"))
+            if frames:
+                first = cv2.imread(os.path.join(color_dir, frames[0]))
+                if first is not None:
+                    h, w = first.shape[:2]
+                    video_path = os.path.join(dirname, "video.mp4")
+                    writer = cv2.VideoWriter(video_path, cv2.VideoWriter_fourcc(*"mp4v"), FREQ, (w, h))
+                    writer.write(first)
+                    for fname in frames[1:]:
+                        frame = cv2.imread(os.path.join(color_dir, fname))
+                        if frame is not None:
+                            writer.write(frame)
+                    writer.release()
+                    logger.info(f"Post-process: created {video_path}")
+
+        # Zip color dir
+        if os.path.isdir(color_dir):
+            zip_path = os.path.join(dirname, "color.zip")
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for fname in sorted(os.listdir(color_dir)):
+                    zf.write(os.path.join(color_dir, fname), arcname=os.path.join("color", fname))
+            shutil.rmtree(color_dir)
+            logger.info(f"Post-process: zipped and removed {color_dir}")
+
+        # Zip depth dir
+        if os.path.isdir(depth_dir):
+            zip_path = os.path.join(dirname, "depth.zip")
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for fname in sorted(os.listdir(depth_dir)):
+                    zf.write(os.path.join(depth_dir, fname), arcname=os.path.join("depth", fname))
+            shutil.rmtree(depth_dir)
+            logger.info(f"Post-process: zipped and removed {depth_dir}")
 
     def reset(self):
         self.frame_idx = 0
