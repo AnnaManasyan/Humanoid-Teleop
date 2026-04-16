@@ -207,6 +207,10 @@ import socket
 import threading
 from pymodbus.client import ModbusTcpClient
 
+# Set to False to disable a hand (skips commands, returns zeros for reads)
+ENABLE_LEFT_HAND  = True
+ENABLE_RIGHT_HAND = False
+
 class InspireController:
     LEFT_IP = "192.168.123.210"
     RIGHT_IP = "192.168.123.211"
@@ -215,22 +219,31 @@ class InspireController:
     READ_REGISTER  = 1546
 
     def __init__(self):
-        # Write clients — owned exclusively by the background write threads
-        self.left_write_client  = ModbusTcpClient(self.LEFT_IP,  port=self.PORT)
-        self.right_write_client = ModbusTcpClient(self.RIGHT_IP, port=self.PORT)
-        # Read clients — owned exclusively by get_current_dual_hand_q (main thread)
-        self.left_read_client   = ModbusTcpClient(self.LEFT_IP,  port=self.PORT)
-        self.right_read_client  = ModbusTcpClient(self.RIGHT_IP, port=self.PORT)
+        self._left_enabled  = ENABLE_LEFT_HAND
+        self._right_enabled = ENABLE_RIGHT_HAND
+        print(f"[InspireController] LEFT hand: {'ENABLED' if self._left_enabled else 'DISABLED'}, RIGHT hand: {'ENABLED' if self._right_enabled else 'DISABLED'}")
 
-        self._connect_all()
         self._stop_event  = threading.Event()
-        # maxsize=1: worker always sends the latest command, stale ones are dropped
         self._left_queue  = queue.Queue(maxsize=1)
         self._right_queue = queue.Queue(maxsize=1)
-        self._left_thread  = threading.Thread(target=self._write_worker, args=(self._left_queue,  self.left_write_client,  "LEFT"),  daemon=True)
-        self._right_thread = threading.Thread(target=self._write_worker, args=(self._right_queue, self.right_write_client, "RIGHT"), daemon=True)
-        self._left_thread.start()
-        self._right_thread.start()
+        self._left_thread  = None
+        self._right_thread = None
+
+        if self._left_enabled:
+            self.left_write_client  = ModbusTcpClient(self.LEFT_IP,  port=self.PORT)
+            self.left_read_client   = ModbusTcpClient(self.LEFT_IP,  port=self.PORT)
+        if self._right_enabled:
+            self.right_write_client = ModbusTcpClient(self.RIGHT_IP, port=self.PORT)
+            self.right_read_client  = ModbusTcpClient(self.RIGHT_IP, port=self.PORT)
+
+        self._connect_all()
+
+        if self._left_enabled:
+            self._left_thread = threading.Thread(target=self._write_worker, args=(self._left_queue, self.left_write_client, "LEFT"), daemon=True)
+            self._left_thread.start()
+        if self._right_enabled:
+            self._right_thread = threading.Thread(target=self._write_worker, args=(self._right_queue, self.right_write_client, "RIGHT"), daemon=True)
+            self._right_thread.start()
 
     def _connect_client(self, client, name):
         if client.connect():
@@ -241,12 +254,18 @@ class InspireController:
         return False
 
     def _connect_all(self):
-        if self._connect_client(self.left_write_client,  "LEFT-write"):
-            self.left_write_client.write_register(1004, 1, 1)
-        if self._connect_client(self.right_write_client, "RIGHT-write"):
-            self.right_write_client.write_register(1004, 1, 1)
-        self._connect_client(self.left_read_client,  "LEFT-read")
-        self._connect_client(self.right_read_client, "RIGHT-read")
+        if self._left_enabled:
+            if self._connect_client(self.left_write_client,  "LEFT-write"):
+                self.left_write_client.write_register(1004, 1, 1)
+            self._connect_client(self.left_read_client,  "LEFT-read")
+        else:
+            print("[InspireController] LEFT hand disabled")
+        if self._right_enabled:
+            if self._connect_client(self.right_write_client, "RIGHT-write"):
+                self.right_write_client.write_register(1004, 1, 1)
+            self._connect_client(self.right_read_client, "RIGHT-read")
+        else:
+            print("[InspireController] RIGHT hand disabled")
 
     def _write_worker(self, q, client, name):
         """Background thread: send commands via pymodbus, ACK handled transparently."""
@@ -265,7 +284,12 @@ class InspireController:
         left_regs  = [int(np.clip(v, 0, 1000)) for v in left_regs[:6]]
         right_regs = [int(np.clip(v, 0, 1000)) for v in right_regs[:6]]
         right_regs[4] = int(np.clip(right_regs[4], 0, 800))  # thumb pinch max 800
-        for q, regs in ((self._left_queue, left_regs), (self._right_queue, right_regs)):
+        pairs = []
+        if self._left_enabled:
+            pairs.append((self._left_queue, left_regs))
+        if self._right_enabled:
+            pairs.append((self._right_queue, right_regs))
+        for q, regs in pairs:
             try:
                 q.put_nowait(regs)
             except queue.Full:
@@ -274,15 +298,21 @@ class InspireController:
 
     def get_current_dual_hand_q(self):
         """Read actual finger positions. Uses dedicated read clients (no ACK interference)."""
-        try:
-            l = self.left_read_client.read_holding_registers(self.READ_REGISTER, 6, 1)
-            left_q = list(l.registers) if not l.isError() else [0] * 6
-        except Exception:
+        if self._left_enabled:
+            try:
+                l = self.left_read_client.read_holding_registers(self.READ_REGISTER, 6, 1)
+                left_q = list(l.registers) if not l.isError() else [0] * 6
+            except Exception:
+                left_q = [0] * 6
+        else:
             left_q = [0] * 6
-        try:
-            r = self.right_read_client.read_holding_registers(self.READ_REGISTER, 6, 1)
-            right_q = list(r.registers) if not r.isError() else [0] * 6
-        except Exception:
+        if self._right_enabled:
+            try:
+                r = self.right_read_client.read_holding_registers(self.READ_REGISTER, 6, 1)
+                right_q = list(r.registers) if not r.isError() else [0] * 6
+            except Exception:
+                right_q = [0] * 6
+        else:
             right_q = [0] * 6
         return left_q + right_q
 
@@ -291,24 +321,34 @@ class InspireController:
         self.ctrl(safe_regs, safe_regs)
         time.sleep(0.2)  # let write threads flush
         self._stop_event.set()
-        self._left_thread.join(timeout=1)
-        self._right_thread.join(timeout=1)
-        for c in (self.left_write_client, self.right_write_client,
-                  self.left_read_client,  self.right_read_client):
-            c.close()
+        if self._left_thread:
+            self._left_thread.join(timeout=1)
+        if self._right_thread:
+            self._right_thread.join(timeout=1)
+        for attr in ("left_write_client", "right_write_client",
+                     "left_read_client",  "right_read_client"):
+            if hasattr(self, attr):
+                getattr(self, attr).close()
 
     def reset(self):
         self._stop_event.set()
-        self._left_thread.join(timeout=1)
-        self._right_thread.join(timeout=1)
-        for c in (self.left_write_client, self.right_write_client,
-                  self.left_read_client,  self.right_read_client):
-            c.close()
+        if self._left_thread:
+            self._left_thread.join(timeout=1)
+        if self._right_thread:
+            self._right_thread.join(timeout=1)
+        for attr in ("left_write_client", "right_write_client",
+                     "left_read_client",  "right_read_client"):
+            if hasattr(self, attr):
+                getattr(self, attr).close()
         self._stop_event.clear()
         self._connect_all()
         self._left_queue  = queue.Queue(maxsize=1)
         self._right_queue = queue.Queue(maxsize=1)
-        self._left_thread  = threading.Thread(target=self._write_worker, args=(self._left_queue,  self.left_write_client,  "LEFT"),  daemon=True)
-        self._right_thread = threading.Thread(target=self._write_worker, args=(self._right_queue, self.right_write_client, "RIGHT"), daemon=True)
-        self._left_thread.start()
-        self._right_thread.start()
+        self._left_thread  = None
+        self._right_thread = None
+        if self._left_enabled:
+            self._left_thread = threading.Thread(target=self._write_worker, args=(self._left_queue, self.left_write_client, "LEFT"), daemon=True)
+            self._left_thread.start()
+        if self._right_enabled:
+            self._right_thread = threading.Thread(target=self._write_worker, args=(self._right_queue, self.right_write_client, "RIGHT"), daemon=True)
+            self._right_thread.start()
