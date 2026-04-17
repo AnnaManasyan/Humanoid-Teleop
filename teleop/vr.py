@@ -342,6 +342,19 @@ class VuerTeleop:
         self.tv = OpenTeleVision(
             self.resolution_cropped, self.shm.name, image_queue, toggle_streaming
         )
+
+        import netifaces
+        print(f"\n{'='*60}")
+        print(f"  Meta Quest 3: open Browser and go to:")
+        for iface in netifaces.interfaces():
+            addrs = netifaces.ifaddresses(iface).get(netifaces.AF_INET, [])
+            for addr in addrs:
+                ip = addr["addr"]
+                if ip.startswith("127."):
+                    continue
+                print(f"  https://{ip}:8012?ws=wss://{ip}:8012")
+        print(f"{'='*60}\n")
+
         self.manus_receiver = ManusSkeletonReceiver(
             address="tcp://localhost:8000",
             left_glove_sn="85ab6e24",

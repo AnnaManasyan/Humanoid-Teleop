@@ -200,21 +200,6 @@ class RobotDataWorker:
             pickle.dump(state, f)
         logger.info(f"State dumped to {filename}")
 
-    def _sleep_until_mod33(self, time_curr):
-        integer_part = int(time_curr)
-        decimal_part = time_curr - integer_part
-        ms_part = int(decimal_part * 1000) % 100
-
-        next_ms_part = ((ms_part // 33) + 1) * 33 % 100
-        hundred_ms_part = int(decimal_part * 10 % 10)
-        if next_ms_part == 32:
-            hundred_ms_part += 1
-
-        next_capture_time = integer_part + next_ms_part / 1000 + hundred_ms_part / 10
-        if (next_capture_time - time_curr) < 0:
-            next_capture_time += 1
-        time.sleep(next_capture_time - time_curr)
-
     def _recv_zmq_frame(self) -> Tuple[Any, Any, Any]:
         logger.debug("worker: start sending request")
         self.socket.send(b"get_frame")
@@ -339,18 +324,71 @@ class RobotDataWorker:
         # logger.debug(f"worker: finish getting robot data")
         return robot_data
 
+    def _receiver_loop(self):
+        """Continuously receive ZMQ frames and update the sample-hold buffer.
+
+        Runs for the entire lifetime of the worker (across sessions) so the
+        teleoperator display stays live even between episodes.
+        """
+        while not self.end_event.is_set():
+            try:
+                rgb_array, ir_array, depth_array = self._recv_zmq_frame()
+                self._send_image_to_teleoperator(ir_array)
+                with self._holder_lock:
+                    self._holder_rgb = rgb_array
+                    self._holder_depth = depth_array
+            except zmq.ZMQError:
+                break  # socket closed during shutdown
+            except Exception as e:
+                logger.error(f"Worker receiver error: {e}")
+
+    def _saver_loop(self):
+        """Drain the save queue and write paired image + JSON for each entry.
+
+        Each queue item contains (frame_idx, rgb, depth, json_str) — both the
+        image and the JSON line are always written together so their counts
+        can never diverge.
+        """
+        dirname = self.shared_data["dirname"]
+        while not self._saver_kill.is_set() or not self._save_queue.empty():
+            try:
+                frame_idx, rgb_array, depth_array, robot_data_json = (
+                    self._save_queue.get(timeout=0.5)
+                )
+            except queue.Empty:
+                continue
+
+            color_filename = os.path.join(
+                dirname, f"color/frame_{frame_idx:06d}.jpg"
+            )
+            depth_filename = os.path.join(
+                dirname, f"depth/frame_{frame_idx:06d}.npy.lzma"
+            )
+            self.async_image_writer.write_image(color_filename, rgb_array)
+            self.depth_queue.put((depth_filename, depth_array))
+            self.robot_data_writer.write(robot_data_json)
+
     def start(self):
-        # logger.debug(f"Worker: Process ID (PID) {os.getpid()}")
-        # self.teleop_proc.start()
         self.depth_proc.start()
+
+        # Persistent sample-hold buffer — receiver fills it, session loop reads it
+        self._holder_lock = threading.Lock()
+        self._holder_rgb = None
+        self._holder_depth = None
+
+        # Single receiver thread for the lifetime of the worker
+        self._receiver_thread = threading.Thread(
+            target=self._receiver_loop, daemon=True
+        )
+        self._receiver_thread.start()
+
         try:
             while not self.end_event.is_set():
                 logger.info(
                     "Worker: waiting for new session start (session_start_event)."
                 )
                 while not self.session_start_event.is_set() and not self.end_event.is_set():
-                    rgb_array, ir_array, depth_array = self._recv_zmq_frame()
-                    self._send_image_to_teleoperator(ir_array)
+                    time.sleep(0.05)  # receiver thread handles ZMQ + teleoperator
                 if self.end_event.is_set():
                     break
                 logger.info("Worker: starting new session.")
@@ -368,44 +406,9 @@ class RobotDataWorker:
             self.img_shm.close()
             self.img_shm.unlink()
 
-            # self.teleoperator.shutdown()
             self.depth_kill_event.set()
             self.depth_proc.join()
             logger.info("Worker: exited")
-
-    def _write_image_data(self, rgb_array, depth_array):
-        logger.debug("Worker: writing robot data")
-
-        color_filename = os.path.join(
-            self.shared_data["dirname"], f"color/frame_{self.frame_idx:06d}.jpg"
-        )
-        depth_filename = os.path.join(
-            self.shared_data["dirname"], f"depth/frame_{self.frame_idx:06d}.npy.lzma"
-        )
-
-        if rgb_array is not None and depth_array is not None:
-            self.async_image_writer.write_image(color_filename, rgb_array)
-            self.depth_queue.put((depth_filename, depth_array))
-            logger.debug(
-                f"Saved color frame to {color_filename} and depth frame to {depth_filename}"
-            )
-        else:
-            logger.error(f"failed to save image {self.frame_idx}")
-
-    def _write_robot_data(self, rgb_array, depth_array, reuse=False):
-        logger.debug(f"Worker: writing robot data")
-        self._write_image_data(rgb_array, depth_array)
-
-        robot_data = self.get_robot_data(time.time())
-
-        if reuse:
-            self.last_robot_data["time"] = time.time()
-            self.robot_data_writer.write(json.dumps(robot_data))
-        else:
-            if self.robot_data_writer is not None:
-                self.robot_data_writer.write(json.dumps(robot_data))
-        self.last_robot_data = robot_data
-        self.frame_idx += 1
 
     def _send_image_to_teleoperator(self, ir_array):
         try:
@@ -421,65 +424,56 @@ class RobotDataWorker:
             os.path.join(self.shared_data["dirname"], "robot_data.jsonl")
         )
 
-    def process_data(self):
-        logger.debug("request frame")
-        rgb_array, ir_array, depth_array = self._recv_zmq_frame()
-        logger.debug("got frame")
-        self._send_image_to_teleoperator(ir_array)
-        time_curr = time.time()
-
-        # logger.debug(f"Worker: got image")
-        if self.is_first:
-            self.is_first = False
-            time.sleep(0.2)  # wait for master to populate data
-            self._sleep_until_mod33(time.time())
-            self.initial_capture_time = time.time()
-            self._write_robot_data(rgb_array, depth_array)
-            logger.debug(f"Worker: initial_capture_time is {self.initial_capture_time}")
-            return
-
-        next_capture_time = self.initial_capture_time + self.frame_idx * DELAY
-        time_curr = time.time()
-        logger.debug(
-            f"[worker process] next_capture_time - time_curr: {next_capture_time - time_curr}"
-        )
-
-        if next_capture_time - time_curr >= 0:
-            time.sleep(next_capture_time - time_curr)
-            self._write_robot_data(rgb_array, depth_array)
-        else:
-            logger.warning(
-                "worker: runner did not finish within 33ms, reusing previous data"
-            )
-            if self.last_robot_data is not None:
-                self._write_robot_data(rgb_array, depth_array, reuse=True)
-            else:
-                logger.error("worker: no previous data available, generating null data")
-                self._write_robot_data(None, None, reuse=True)
-
     def run_session(self):
         self._session_init()
-        self.is_first = True
-        try:
-            while not self.kill_event.is_set():
-                logger.debug("Worker: entering main loop")
-                self.process_data()
-                # self.robot_data_writer.close()
-                # self.robot_data_writer = AsyncWriter(
-                #     os.path.join(self.shared_data["dirname"], "robot_data.jsonl")
-                # )
-                logger.debug("Worker: initing robot_data_writer")
 
-        # except Exception as e:
-        #     logger.error(f"robot_data_worker encountered an error: {e}")
+        self._save_queue = queue.Queue()
+        self._saver_kill = threading.Event()
+
+        # Wait until the receiver has populated the holder with at least one frame
+        while self._holder_rgb is None:
+            time.sleep(0.01)
+
+        time.sleep(0.2)  # wait for master to populate shared robot data
+
+        saver = threading.Thread(target=self._saver_loop, daemon=True)
+        saver.start()
+
+        try:
+            initial_time = time.time()
+            while not self.kill_event.is_set():
+                # Fixed-rate 30 Hz tick
+                next_time = initial_time + self.frame_idx * DELAY
+                now = time.time()
+                if next_time > now:
+                    time.sleep(next_time - now)
+
+                # Sample latest frame from holder (reuses previous if no new frame)
+                with self._holder_lock:
+                    rgb = self._holder_rgb
+                    depth = self._holder_depth
+
+                # Build JSON from current robot shared-memory state
+                robot_data = self.get_robot_data(time.time())
+                robot_data_json = json.dumps(robot_data)
+
+                # Enqueue paired (image + JSON) — saver writes both atomically
+                self._save_queue.put(
+                    (self.frame_idx, rgb, depth, robot_data_json)
+                )
+
+                self.last_robot_data = robot_data
+                self.frame_idx += 1
 
         finally:
             logger.info("Worker begin exiting.")
-            # TODO: flush the buffer?
-            # self.teleop_thread.join(1)
-            logger.info("Worker: teleop thread joined.")
+            # Signal saver to finish and wait for queue to drain
+            self._saver_kill.set()
+            saver.join()
+            logger.info("Worker: saver thread joined.")
             self.robot_data_writer.close()
             logger.info("Worker: writer closed.")
+            self.shared_data["worker_flush_event"].set()
             self.reset()
             logger.info("Worker: closing async image writer.")
             if hasattr(self, "async_image_writer"):

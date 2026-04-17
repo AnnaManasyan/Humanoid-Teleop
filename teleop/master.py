@@ -207,9 +207,12 @@ class RobotTaskmaster:
                     "Master: start event recvd. clearing start event. starting session"
                 )
                 self.run_session()
+                logger.debug("Master: waiting for worker to flush...")
+                self.shared_data["worker_flush_event"].wait(timeout=5)
+                self.shared_data["worker_flush_event"].clear()
                 logger.debug("Master: merging data...")
                 if not self.failure_event.is_set():
-                    self.merge_data()  # TODO: maybe a separate thread?
+                    self.merge_data()
                     logger.info("Master: merge finished. Preparing for a new run...")
                 else:
                     # self.delete_last_data()

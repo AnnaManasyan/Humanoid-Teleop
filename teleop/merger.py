@@ -64,6 +64,15 @@ class DataMerger:
                 if line:
                     ik_data_list.append(json.loads(line))
 
+        if not robot_data_json_list or not ik_data_list:
+            logger.warning(
+                f"Merge skipped: robot_data has {len(robot_data_json_list)} entries, "
+                f"ik_data has {len(ik_data_list)} entries."
+            )
+            with open(self.output_path, "w") as f:
+                json.dump(robot_data_json_list, f, indent=4)
+            return
+
         ik_data_dict = {entry["armtime"]: entry for entry in ik_data_list}
         robot_data_dict = {entry["time"]: entry for entry in robot_data_json_list}
 

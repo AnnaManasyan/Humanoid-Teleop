@@ -138,6 +138,17 @@ export CYCLONEDDS_URI="<CycloneDDS><Domain><General><NetworkInterfaceAddress>192
 10. Repeat by pressing `s` to start recording the next episode. Record 40 episodes for each task.
 11. Type `exit` to shut down the program.
 
+## Replay a Recorded Episode
+
+To replay a previously recorded episode's actions on the robot:
+
+```bash
+cd teleop
+python3 replay_episode.py data/example/manipulation/fold_scarf/episode_3/data.json
+```
+
+Press **Ctrl+C** to stop early — the arm weight ramps down safely.
+
 # Acknowledgement
 
 This code builds upon following open-source code-bases. Please visit the URLs to see the respective LICENSES:

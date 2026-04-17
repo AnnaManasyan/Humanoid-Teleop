@@ -78,6 +78,7 @@ class TeleopManager:
         self.shared_dict["failure_event"] = self.manager.Event()
         self.shared_dict["end_event"] = self.manager.Event()  # TODO: redundent
         self.shared_dict["following_paused_event"] = self.manager.Event()
+        self.shared_dict["worker_flush_event"] = self.manager.Event()
         self.progress_tracker = ProgressTracker()
 
 

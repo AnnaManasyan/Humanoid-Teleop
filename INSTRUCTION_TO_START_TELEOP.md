@@ -57,7 +57,18 @@ Once the first episode finishes, the robot has already raised and lowered its ar
 
 In the host computer terminal, type `exit` and press Enter.
 
-## 8. Tips
+## 8. Replay an Episode
+
+To replay a recorded episode's actions on the robot:
+
+```bash
+cd /home/g1/Desktop/G1/Humanoid-Teleop/teleop
+python3 replay_episode.py data/example/manipulation/fold_scarf/episode_3/data.json
+```
+
+Press **Ctrl+C** to stop early — the arm weight ramps down safely.
+
+## 9. Tips
 
 - **Move only your hands** — head tracking is disabled; control is relative to hand position.
 - After pressing the right pedal, the robot will stop moving until the next episode is started.
