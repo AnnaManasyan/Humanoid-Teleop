@@ -138,3 +138,17 @@ class H1_sizes:
     # ODOM_VELOCITY_SIZE = 3
     # ODOM_RPY_SIZE = 3
     # ODOM_QUATERNION_SIZE = 4
+
+
+# Headset camera display modes, cycled live with the 'c' keyboard command.
+CAMERA_MODE_IR = 0       # IR stereo pair (default) — true depth perception
+CAMERA_MODE_RGB = 1      # mono RGB color duplicated to both eyes
+CAMERA_MODE_OVERLAY = 2  # RGB color blended on top of the IR stereo
+CAMERA_MODE_COUNT = 3
+CAMERA_MODE_NAMES = {
+    CAMERA_MODE_IR: "Infrared camera",
+    CAMERA_MODE_RGB: "Color camera",
+    CAMERA_MODE_OVERLAY: "Color overlay",
+}
+# Blend weight of RGB over IR in overlay mode (0.0 = IR only, 1.0 = RGB only).
+CAMERA_OVERLAY_ALPHA = 0.5

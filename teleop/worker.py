@@ -114,6 +114,7 @@ class RobotDataWorker:
         self.kill_event = shared_data["kill_event"]
         self.session_start_event = shared_data["session_start_event"]
         self.end_event = shared_data["end_event"]  # TODO: redundent
+        self.camera_mode = shared_data["camera_mode"]
         # self.h1_lock = Lock()
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
@@ -333,7 +334,15 @@ class RobotDataWorker:
         while not self.end_event.is_set():
             try:
                 rgb_array, ir_array, depth_array = self._recv_zmq_frame()
-                self._send_image_to_teleoperator(ir_array)
+                mode = self.camera_mode.value
+                if mode == CAMERA_MODE_RGB:
+                    self._send_image_to_teleoperator(self._make_stereo_rgb(rgb_array))
+                elif mode == CAMERA_MODE_OVERLAY:
+                    self._send_image_to_teleoperator(
+                        self._make_overlay(rgb_array, ir_array)
+                    )
+                else:
+                    self._send_image_to_teleoperator(ir_array)
                 with self._holder_lock:
                     self._holder_rgb = rgb_array
                     self._holder_depth = depth_array
@@ -409,6 +418,48 @@ class RobotDataWorker:
             self.depth_kill_event.set()
             self.depth_proc.join()
             logger.info("Worker: exited")
+
+    def _make_stereo_rgb(self, rgb_array):
+        """Build a side-by-side stereo frame from the single RGB camera.
+
+        The RealSense has one color camera but two IR cameras, so the IR stream
+        is already a genuine stereo pair. RGB is mono, so we duplicate the color
+        frame into both halves; otherwise the headset's left/right eye split
+        ([:, :w] and [:, w:]) would show each eye only half the scene. This is a
+        display-only frame and does not affect the single-width color saved to
+        disk (self._holder_rgb stays untouched).
+        """
+        color = cv2.imdecode(rgb_array, cv2.IMREAD_COLOR)
+        if color is None:
+            return rgb_array  # fall back; headset just shows the mono frame
+        combined = np.hstack((color, color))
+        ret, encoded = cv2.imencode(".jpg", combined)
+        return encoded if ret else rgb_array
+
+    def _make_overlay(self, rgb_array, ir_array):
+        """Blend the RGB color frame on top of the IR stereo frame.
+
+        IR keeps the stereo depth cues (one IR view per eye) while the mono RGB
+        color is alpha-blended over both halves. The color camera and IR cameras
+        have slightly different viewpoints, so the color is not pixel-perfectly
+        registered to the IR depth, but it adds a usable color reference. Falls
+        back to plain IR if either frame fails to decode. Display only — the
+        single-width color saved to disk (self._holder_rgb) is untouched.
+        """
+        ir = cv2.imdecode(ir_array, cv2.IMREAD_COLOR)
+        color = cv2.imdecode(rgb_array, cv2.IMREAD_COLOR)
+        if ir is None or color is None:
+            return ir_array
+        # Duplicate mono color side-by-side and match the IR frame size so each
+        # eye-half overlaps its own IR view.
+        color_combined = np.hstack((color, color))
+        if color_combined.shape[:2] != ir.shape[:2]:
+            color_combined = cv2.resize(color_combined, (ir.shape[1], ir.shape[0]))
+        blended = cv2.addWeighted(
+            color_combined, CAMERA_OVERLAY_ALPHA, ir, 1.0 - CAMERA_OVERLAY_ALPHA, 0.0
+        )
+        ret, encoded = cv2.imencode(".jpg", blended)
+        return encoded if ret else ir_array
 
     def _send_image_to_teleoperator(self, ir_array):
         try:

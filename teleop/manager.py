@@ -79,6 +79,9 @@ class TeleopManager:
         self.shared_dict["end_event"] = self.manager.Event()  # TODO: redundent
         self.shared_dict["following_paused_event"] = self.manager.Event()
         self.shared_dict["worker_flush_event"] = self.manager.Event()
+        # Headset camera display mode (CAMERA_MODE_IR/RGB/OVERLAY), cycled live
+        # with the 'c' keyboard command. Default: IR stereo.
+        self.shared_dict["camera_mode"] = self.manager.Value("i", CAMERA_MODE_IR)
         self.progress_tracker = ProgressTracker()
 
 
@@ -259,6 +262,10 @@ class TeleopManager:
             else:
                 self.shared_dict["following_paused_event"].set()
                 self._speak("Following paused")
+        elif cmd == "c":
+            mode = (self.shared_dict["camera_mode"].value + 1) % CAMERA_MODE_COUNT
+            self.shared_dict["camera_mode"].value = mode
+            self._speak(CAMERA_MODE_NAMES[mode])
         elif cmd == "exit":
             self._speak("Shutting down")
             self.cleanup()
@@ -269,14 +276,14 @@ class TeleopManager:
         last_cmd = [None]
 
         def keyboard_loop():
-            logger.info("Keyboard: 's'=start, 'q'=stop, 'd'=fail, 'p'=toggle follow, 'exit'=quit")
+            logger.info("Keyboard: 's'=start, 'q'=stop, 'd'=fail, 'p'=toggle follow, 'c'=toggle IR/RGB, 'exit'=quit")
             while True:
                 try:
                     user_input = input("> ").lower().strip()
-                    if user_input in ("s", "q", "d", "p", "exit"):
+                    if user_input in ("s", "q", "d", "p", "c", "exit"):
                         self._execute_command(user_input, last_cmd)
                     else:
-                        logger.info("Invalid command. Use 's', 'q', 'd', 'p', or 'exit'.")
+                        logger.info("Invalid command. Use 's', 'q', 'd', 'p', 'c', or 'exit'.")
                 except EOFError:
                     break
 
