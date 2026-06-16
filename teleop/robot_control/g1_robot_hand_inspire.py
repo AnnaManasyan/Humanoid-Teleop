@@ -209,7 +209,7 @@ from pymodbus.client import ModbusTcpClient
 
 # Set to False to disable a hand (skips commands, returns zeros for reads)
 ENABLE_LEFT_HAND  = True
-ENABLE_RIGHT_HAND = False
+ENABLE_RIGHT_HAND = True
 
 class InspireController:
     LEFT_IP = "192.168.123.210"
