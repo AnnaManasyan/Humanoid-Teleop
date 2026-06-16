@@ -15,11 +15,23 @@ Refer to the labels printed on the controller for the corresponding buttons.
 ## 2. Robot (SSH)
 
 ```bash
-ssh unitree@192.168.1.58       # Password: 123
-# Select 2 (noetic) when prompted
-cd Humanoid-Teleop
-bash start_image_server.sh    # Enter password: 123
+ssh unitree@192.168.1.36       # Password: 123  (IP may change — check the robot)
+cd deployment
+bash start_image_server.sh     # Enter sudo password: 123 (frees the RealSense)
 ```
+
+The image server streams RGB/IR/depth on `192.168.123.164:5556`. It runs from a
+uv virtualenv at `~/deployment/.venv`.
+
+> **First-time setup only** (if `~/deployment` is missing — e.g. after a reflash):
+> copy `teleop/image_server/realsense_server.py` and
+> `teleop/image_server/start_image_server.sh` to `~/deployment/` on the robot, then:
+> ```bash
+> cd ~/deployment
+> uv venv --system-site-packages --python "$(which python3)" .venv
+> uv pip install --python .venv/bin/python pyzmq
+> ```
+> (System python already provides pyrealsense2/cv2/numpy; only pyzmq is added.)
 
 ## 3. Host Computer
 

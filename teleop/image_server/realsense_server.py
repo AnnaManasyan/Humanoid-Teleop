@@ -69,7 +69,9 @@ def start_server():
     context = zmq.Context()
     # Create a REP socket for request-response
     socket = context.socket(zmq.REP)
-    socket.bind("tcp://192.168.123.162:5556")
+    # Bind all interfaces so a changed robot IP doesn't break the stream.
+    # The host worker connects to the robot's internal IP (g1: .164, h1: .162).
+    socket.bind("tcp://*:5556")
     print("Server started, waiting for client requests...")
 
     try:
