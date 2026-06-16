@@ -108,11 +108,11 @@ class BaseArmController:
         self.kd_high = 5.0
         self.kp_low = 100.0
         self.kd_low = 7.5
-        self.kp_wrist = 40.0
-        self.kd_wrist = 4.0
+        self.kp_wrist = 30.0
+        self.kd_wrist = 6.0
 
         self.all_motor_q = None
-        self.arm_velocity_limit = 40.0
+        self.arm_velocity_limit = 30.0
         self.control_dt = 1.0 / 250.0
 
         self._speed_gradual_max = False
