@@ -35,11 +35,34 @@ uv virtualenv at `~/deployment/.venv`.
 
 ## 3. Host Computer
 
+### Network setup (robot wire)
+
+The host talks to the robot over the `192.168.123.x` USB-ethernet link and needs
+its own address on that subnet (the robot's devices are `.161`/`.162`/`.164`).
+This is **not persistent** — redo it after a reboot or replug.
+
+```bash
+# Find the robot dongle (the UP interface with no 192.168.x IP, an "enx..." name):
+ip -br addr show
+# Assign the host address (replace enx... with your dongle's name):
+sudo ip addr add 192.168.123.123/24 dev enx4cea4166b8b8
+ping -c2 192.168.123.164        # robot/image server should reply
+```
+
+> If the interface already has the address, `ip addr add` says "File exists" —
+> that's fine. The robot control code auto-detects whichever interface holds a
+> `192.168.123.x` address, so the dongle's exact name doesn't matter.
+
+### Run
+
 ```bash
 cd /home/g1/Desktop/G1/Humanoid-Teleop/teleop
 micromamba activate tv
 python main.py --robot g1_inspire
 ```
+
+Startup should log `DDS using network interface: enx...` with no
+"No interface with a 192.168.123.x address found" warning.
 
 ## 4. Quest (VR Headset)
 

@@ -1,3 +1,4 @@
+import subprocess
 import threading
 import time
 
@@ -19,6 +20,31 @@ from robot_control.robot_arm_joints import (
     H1_2_JointIndex,
 )
 from utils.logger import logger
+
+# The host talks to the robot over the 192.168.123.x wire. The USB-ethernet
+# dongle's interface name changes when it's swapped/replugged, so detect the
+# interface that currently holds a 192.168.123.x address instead of hardcoding
+# it. Falls back to the last-known dongle name if nothing matches.
+ROBOT_DDS_SUBNET = "192.168.123."
+ROBOT_DDS_INTERFACE_FALLBACK = "enx4cea4166b8b8"
+
+
+def find_robot_dds_interface():
+    try:
+        out = subprocess.check_output(["ip", "-o", "-4", "addr", "show"]).decode()
+        for line in out.splitlines():
+            parts = line.split()
+            # e.g. "3: enx4cea4166b8b8    inet 192.168.123.123/24 ..."
+            if len(parts) >= 4 and parts[3].startswith(ROBOT_DDS_SUBNET):
+                return parts[1]
+    except Exception as e:
+        logger.warning(f"Could not auto-detect robot DDS interface: {e}")
+    logger.warning(
+        f"No interface with a {ROBOT_DDS_SUBNET}x address found; "
+        f"falling back to '{ROBOT_DDS_INTERFACE_FALLBACK}'. "
+        f"Is 192.168.123.123 assigned to the robot ethernet?"
+    )
+    return ROBOT_DDS_INTERFACE_FALLBACK
 
 kTopicLowCommand = "rt/arm_sdk"
 # kTopicLowCommand = "rt/lowcmd"
@@ -93,9 +119,10 @@ class BaseArmController:
         self._gradual_start_time = None
         self._gradual_time = None
 
-        # Initialize DDS communication
-        ChannelFactoryInitialize(0, "enx50a030012e31")
-        # ChannelFactoryInitialize(0, "enp4s0")
+        # Initialize DDS communication on the 192.168.123.x robot interface.
+        dds_interface = find_robot_dds_interface()
+        logger.info(f"DDS using network interface: {dds_interface}")
+        ChannelFactoryInitialize(0, dds_interface)
 
         self.lowcmd_publisher = ChannelPublisher(kTopicLowCommand, LowCmd_)
         self.lowcmd_publisher.Init()
