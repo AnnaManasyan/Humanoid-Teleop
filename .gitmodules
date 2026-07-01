@@ -1,3 +1,0 @@
-[submodule "debug_inspire_hands/inspire_hand_ws"]
-	path = debug_inspire_hands/inspire_hand_ws
-	url = git@github.com:NaCl-1374/inspire_hand_ws.git

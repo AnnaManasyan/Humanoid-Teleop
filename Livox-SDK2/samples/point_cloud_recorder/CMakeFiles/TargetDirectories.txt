@@ -1,3 +1,0 @@
-/home/zhenyu/Research/Robot/avp_teleoperate/Livox-SDK2/samples/point_cloud_recorder/CMakeFiles/point_cloud_recorder.dir
-/home/zhenyu/Research/Robot/avp_teleoperate/Livox-SDK2/samples/point_cloud_recorder/CMakeFiles/edit_cache.dir
-/home/zhenyu/Research/Robot/avp_teleoperate/Livox-SDK2/samples/point_cloud_recorder/CMakeFiles/rebuild_cache.dir
