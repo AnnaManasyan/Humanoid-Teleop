@@ -36,6 +36,7 @@ K=np.array([[FX,0,CX],[0,FY,CY],[0,0,1.0]])
 # ---- tuning ----
 DEBOUNCE=3; MAXJUMP=0.06; SMOOTH=2    # stability + smoothing (pose frames)
 PRESENCE_PX=190; MARGIN=50; HOLD=2    # MediaPipe presence gate
+MAX_SPAN_PX=900                       # skip skeletons whose pixel bbox is impossibly large (garbage projection)
 
 # OpenXR 26-joint skeleton bones (wrist=1; fingers thumb..little)
 BONES=[(1,2),(2,3),(3,4),(4,5),(1,6),(6,7),(7,8),(8,9),(9,10),(1,11),(11,12),
@@ -129,6 +130,13 @@ def detect_hands(path):
                     for hh,sc in zip(r.hand_landmarks,r.handedness) if sc[0].score>=0.5]); n+=1
     cap.release(); return cen
 
+def plausible(uv):
+    """False if the projected skeleton spans an impossibly large area (garbage /
+    behind-camera projection) -> don't draw."""
+    c=uv[np.isfinite(uv).all(1)]
+    if len(c)<10: return False
+    return np.hypot(*(c.max(0)-c.min(0))) < MAX_SPAN_PX
+
 def present(uv,cens,W,H):
     c=uv[np.isfinite(uv).all(1)]
     if len(c)<10: return False
@@ -159,6 +167,7 @@ def main():
                 if nm not in hands or not(stab[nm][k] and stab[nm][k+1]): continue
                 uv,_=cv2.projectPoints(hl(hands[nm],hp,hr).astype(np.float64),RVEC,TVEC,K,DIST)
                 uv=uv.reshape(-1,2)
+                if not plausible(uv): continue
                 if present(uv,cens,W,H): last[nm]=n
                 elif n-last[nm]>HOLD: continue
                 for a,b in BONES:

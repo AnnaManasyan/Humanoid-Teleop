@@ -67,6 +67,7 @@ def process(folder):
             for nm,col in [("left",(0,255,0)),("right",(0,128,255))]:
                 if nm not in hands or not(stab[nm][k] and stab[nm][k+1]): continue
                 uv=proj(hands,nm,hp,hr)
+                if not O.plausible(uv): continue
                 if O.present(uv,cens,W,H): last[nm]=n
                 elif n-last[nm]>O.HOLD: continue
                 for a,b in O.BONES:
