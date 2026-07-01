@@ -1,0 +1,8 @@
+egokit-env/
+.venv/
+hand_landmarker.task
+internal.mp4
+poses.txt
+log.txt
+internal_overlay.mp4
+__pycache__/
