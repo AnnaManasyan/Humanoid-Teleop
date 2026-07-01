@@ -13,14 +13,14 @@ hallucinated).
 Run:  .venv/bin/python overlay_hands.py
 Needs: numpy, opencv-python, mediapipe, and hand_landmarker.task in this folder.
 """
-import re, subprocess, numpy as np, cv2
+import os, re, subprocess, numpy as np, cv2
 import mediapipe as mp
 from mediapipe.tasks import python as mpy
 from mediapipe.tasks.python import vision
 
 # ---- files ----
 VIDEO="internal.mp4"; POSES="poses.txt"; LOG="log.txt"; OUT="internal_overlay.mp4"
-MODEL="hand_landmarker.task"
+MODEL=os.path.join(os.path.dirname(os.path.abspath(__file__)),"hand_landmarker.task")
 
 # ---- device calibration (intrinsics + distortion + camera-from-head extrinsic) ----
 FX=FY=885.8618993046906

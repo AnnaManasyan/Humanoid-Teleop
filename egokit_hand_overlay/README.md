@@ -23,6 +23,12 @@ curl -sSL -o hand_landmarker.task https://storage.googleapis.com/mediapipe-model
 uv run python overlay_hands.py             # → internal_overlay.mp4
 ```
 
+Many recordings at once (auto-syncs each session's offset):
+
+```bash
+uv run python batch_overlay.py <parent_folder>   # → internal_overlay.mp4 in every recording subfolder
+```
+
 ## Notes
 - Calibration (intrinsics, distortion, camera-from-head extrinsic) + video↔pose offset are baked in for the tuned headset — a different Quest/mode needs re-tuning the constants atop `overlay_hands.py`.
 - A hand is drawn only where MediaPipe confirms a real hand → no phantom/out-of-view skeletons.
